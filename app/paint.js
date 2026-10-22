@@ -596,6 +596,14 @@ class StickmanPaintApp {
         this.setStickmanPose('hover');
       }
 
+      if (this.currentTool === 'select') {
+        const pt = this.getCanvasCoords(e);
+        this.lastX = pt.x;
+        this.lastY = pt.y;
+        this.handleSelectPointerMove(pt.x, pt.y);
+        return;
+      }
+
       if (!this.isDrawing) return;
       const pt = this.getCanvasCoords(e);
       this.drawStroke(pt.x, pt.y);
@@ -603,13 +611,28 @@ class StickmanPaintApp {
 
     this.paperSheet.addEventListener('pointerdown', (e) => {
       if (e.button !== 0) return;
+      const pt = this.getCanvasCoords(e);
+
+      // 1. Text Tool Insertion
+      if (this.currentTool === 'text') {
+        this.isDrawing = false;
+        this.openTextInput(pt.x, pt.y);
+        return;
+      }
+
+      // 2. Marquee Selection
+      if (this.currentTool === 'select') {
+        this.isDrawing = true;
+        this.handleSelectPointerDown(pt.x, pt.y);
+        return;
+      }
+
       this.isDrawing = true;
       this.animState = 'drawing';
       this.lastActivityTime = performance.now();
       this.strokeDistance = 0;
       this.paperSheet.setPointerCapture(e.pointerId);
 
-      const pt = this.getCanvasCoords(e);
       this.startX = pt.x;
       this.startY = pt.y;
       this.lastX = pt.x;
@@ -649,6 +672,12 @@ class StickmanPaintApp {
     const stopDrawing = (e) => {
       if (!this.isDrawing) return;
       this.isDrawing = false;
+
+      if (this.currentTool === 'select') {
+        this.handleSelectPointerUp();
+        return;
+      }
+
       this.stopPencilAudio();
       this.drawStopTime = performance.now();
       this.animState = 'stopping';
@@ -892,6 +921,28 @@ class StickmanPaintApp {
       else if (key === 'e') this.setActiveTool('eraser');
       else if (key === 'g') this.setActiveTool('bucket');
       else if (key === 'i') this.setActiveTool('eyedropper');
+      else if (key === 't') this.setActiveTool('text');
+      else if (key === 's') this.setActiveTool('select');
+      else if (key === 'delete' || key === 'backspace') {
+        if (this.selection) {
+          e.preventDefault();
+          this.deleteSelection();
+        }
+      } else if (key === 'enter') {
+        if (this.selection) {
+          e.preventDefault();
+          this.commitSelection();
+        }
+      } else if (key === 'escape') {
+        if (this.selection) {
+          e.preventDefault();
+          this.commitSelection();
+        }
+        if (this.activeTextInput) {
+          e.preventDefault();
+          this.cancelTextInput();
+        }
+      }
     });
   }
 
@@ -954,12 +1005,256 @@ class StickmanPaintApp {
     if (this.isDrawing && this.stopDrawing) {
       this.stopDrawing();
     }
+    if (this.currentTool === 'select' && tool !== 'select') {
+      this.commitSelection();
+    }
+    if (this.currentTool === 'text' && tool !== 'text') {
+      this.commitTextInput();
+    }
     this.currentTool = tool;
     this.stickmanActor.classList.toggle('tool-eraser', tool === 'eraser');
     this.updateEraserIndicator();
     document.querySelectorAll('.tool-btn').forEach(btn => {
       btn.classList.toggle('active', btn.dataset.tool === tool);
     });
+
+    if (tool === 'text') {
+      this.showToast('Text Tool: Click on canvas to type');
+    } else if (tool === 'select') {
+      this.showToast('Select Tool: Drag box to select and move');
+    }
+  }
+
+  /* ==========================================================================
+     Text Tool System
+     ========================================================================== */
+  openTextInput(canvasX, canvasY) {
+    if (this.activeTextInput) {
+      this.commitTextInput();
+    }
+
+    const rect = this.paperSheet.getBoundingClientRect();
+    const scale = rect.width / this.canvasWidth;
+    const screenX = rect.left + canvasX * scale;
+    const screenY = rect.top + canvasY * scale;
+
+    const fontSize = Math.max(18, Math.min(64, this.strokeSize * 2 + 16));
+    const scaledFontSize = Math.round(fontSize * scale);
+
+    const inputWrap = document.createElement('div');
+    inputWrap.className = 'canvas-text-editor-wrap';
+    inputWrap.style.left = `${screenX}px`;
+    inputWrap.style.top = `${screenY}px`;
+
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.className = 'canvas-text-input';
+    input.placeholder = 'Type warrior text...';
+    input.style.color = this.currentColor;
+    input.style.fontSize = `${scaledFontSize}px`;
+
+    inputWrap.appendChild(input);
+    document.body.appendChild(inputWrap);
+
+    this.activeTextInput = {
+      wrap: inputWrap,
+      input,
+      x: canvasX,
+      y: canvasY,
+      fontSize,
+      color: this.currentColor
+    };
+
+    setTimeout(() => input.focus(), 15);
+
+    input.addEventListener('keydown', (e) => {
+      e.stopPropagation();
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        this.commitTextInput();
+      } else if (e.key === 'Escape') {
+        e.preventDefault();
+        this.cancelTextInput();
+      }
+    });
+
+    setTimeout(() => {
+      const clickHandler = (e) => {
+        if (this.activeTextInput && !this.activeTextInput.wrap.contains(e.target)) {
+          this.commitTextInput();
+          window.removeEventListener('pointerdown', clickHandler);
+        }
+      };
+      window.addEventListener('pointerdown', clickHandler);
+    }, 100);
+  }
+
+  commitTextInput() {
+    if (!this.activeTextInput) return;
+    const { wrap, input, x, y, fontSize, color } = this.activeTextInput;
+    const text = input.value.trim();
+    wrap.remove();
+    this.activeTextInput = null;
+
+    if (!text) return;
+
+    const layer = this.getActiveLayer();
+    if (!layer || !layer.visible) return;
+
+    const ctx = layer.ctx;
+    ctx.save();
+    ctx.font = `900 ${fontSize}px 'Permanent Marker', 'Outfit', sans-serif`;
+    ctx.textBaseline = 'top';
+    ctx.fillStyle = color;
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.6)';
+    ctx.shadowBlur = 4;
+    ctx.shadowOffsetX = 1;
+    ctx.shadowOffsetY = 1;
+    ctx.fillText(text, x, y);
+    ctx.restore();
+
+    this.saveHistory(`Add Text "${text.slice(0, 10)}"`);
+    this.showToast('Text committed');
+    if (this.stickman) this.stickman.triggerConfident();
+  }
+
+  cancelTextInput() {
+    if (!this.activeTextInput) return;
+    this.activeTextInput.wrap.remove();
+    this.activeTextInput = null;
+  }
+
+  /* ==========================================================================
+     Marquee Select Tool System
+     ========================================================================== */
+  handleSelectPointerDown(x, y) {
+    if (this.selection && this.isInsideSelection(x, y)) {
+      this.isMovingSelection = true;
+      this.moveStartX = x;
+      this.moveStartY = y;
+      this.initialSelX = this.selection.x;
+      this.initialSelY = this.selection.y;
+      return;
+    }
+
+    this.commitSelection();
+    this.isSelecting = true;
+    this.selStartX = x;
+    this.selStartY = y;
+    this.selection = null;
+    this.previewCtx.clearRect(0, 0, this.canvasWidth, this.canvasHeight);
+  }
+
+  isInsideSelection(x, y) {
+    if (!this.selection) return false;
+    const { x: sx, y: sy, w: sw, h: sh } = this.selection;
+    return x >= sx && x <= sx + sw && y >= sy && y <= sy + sh;
+  }
+
+  handleSelectPointerMove(x, y) {
+    if (this.isMovingSelection && this.selection) {
+      const dx = x - this.moveStartX;
+      const dy = y - this.moveStartY;
+      this.selection.x = Math.round(this.initialSelX + dx);
+      this.selection.y = Math.round(this.initialSelY + dy);
+      this.renderSelectionPreview();
+      return;
+    }
+
+    if (this.isSelecting) {
+      const x1 = Math.min(this.selStartX, x);
+      const y1 = Math.min(this.selStartY, y);
+      const w = Math.abs(x - this.selStartX);
+      const h = Math.abs(y - this.selStartY);
+
+      this.previewCtx.clearRect(0, 0, this.canvasWidth, this.canvasHeight);
+      this.previewCtx.save();
+      this.previewCtx.strokeStyle = '#38bdf8';
+      this.previewCtx.lineWidth = 1.5;
+      this.previewCtx.setLineDash([6, 4]);
+      this.previewCtx.fillStyle = 'rgba(56, 189, 248, 0.12)';
+      this.previewCtx.fillRect(x1, y1, w, h);
+      this.previewCtx.strokeRect(x1, y1, w, h);
+      this.previewCtx.restore();
+    }
+  }
+
+  handleSelectPointerUp() {
+    if (this.isMovingSelection) {
+      this.isMovingSelection = false;
+      return;
+    }
+
+    if (this.isSelecting) {
+      this.isSelecting = false;
+      const x = Math.round(Math.min(this.selStartX, this.lastX));
+      const y = Math.round(Math.min(this.selStartY, this.lastY));
+      const w = Math.round(Math.abs(this.lastX - this.selStartX));
+      const h = Math.round(Math.abs(this.lastY - this.selStartY));
+
+      if (w > 6 && h > 6) {
+        const layer = this.getActiveLayer();
+        if (layer && layer.visible) {
+          const imgData = layer.ctx.getImageData(x, y, w, h);
+          const selCanvas = document.createElement('canvas');
+          selCanvas.width = w;
+          selCanvas.height = h;
+          selCanvas.getContext('2d').putImageData(imgData, 0, 0);
+
+          layer.ctx.clearRect(x, y, w, h);
+
+          this.selection = {
+            canvas: selCanvas,
+            x,
+            y,
+            w,
+            h,
+            sourceLayer: layer
+          };
+
+          this.renderSelectionPreview();
+          this.showToast('Area selected — drag to reposition');
+        }
+      } else {
+        this.previewCtx.clearRect(0, 0, this.canvasWidth, this.canvasHeight);
+        this.selection = null;
+      }
+    }
+  }
+
+  renderSelectionPreview() {
+    this.previewCtx.clearRect(0, 0, this.canvasWidth, this.canvasHeight);
+    if (!this.selection) return;
+
+    const { canvas, x, y, w, h } = this.selection;
+    this.previewCtx.drawImage(canvas, x, y);
+
+    this.previewCtx.save();
+    this.previewCtx.strokeStyle = '#38bdf8';
+    this.previewCtx.lineWidth = 1.5;
+    this.previewCtx.setLineDash([6, 4]);
+    this.previewCtx.strokeRect(x, y, w, h);
+    this.previewCtx.restore();
+  }
+
+  commitSelection() {
+    if (!this.selection) return;
+    const { canvas, x, y, sourceLayer } = this.selection;
+    this.previewCtx.clearRect(0, 0, this.canvasWidth, this.canvasHeight);
+
+    if (sourceLayer) {
+      sourceLayer.ctx.drawImage(canvas, x, y);
+      this.saveHistory('Move Selection');
+    }
+    this.selection = null;
+  }
+
+  deleteSelection() {
+    if (!this.selection) return;
+    this.previewCtx.clearRect(0, 0, this.canvasWidth, this.canvasHeight);
+    this.selection = null;
+    this.saveHistory('Delete Selection');
+    this.showToast('Selection deleted');
   }
 
   getEraserRadius() {
