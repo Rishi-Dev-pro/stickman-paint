@@ -2675,28 +2675,69 @@
       modal.id = 'trick-gallery-modal';
       modal.innerHTML = `
         <div class="trick-gallery-backdrop" id="trick-gallery-backdrop"></div>
-        <div class="trick-gallery-dialog" role="dialog" aria-label="Special Moves & Tricks Gallery">
-          <!-- Header -->
+        <div class="trick-gallery-dialog" role="dialog" aria-label="Stickman Secret Tricks &amp; Special Moves Gallery">
+          <!-- Manga Dojo Header with Sensei Stickman Mascot -->
           <div class="trick-gallery-header">
-            <div class="trick-header-title-wrap">
-              <span class="trick-badge-icon">✦</span>
-              <div>
-                <h2 class="trick-gallery-title">ARTIST SPECIAL MOVES & TRICKS GALLERY</h2>
-                <p class="trick-gallery-subtitle">Aesthetic illustration sequences & procedural master drawings</p>
+            <div class="trick-header-left">
+              <div class="trick-mascot-avatar" aria-hidden="true">
+                <svg viewBox="0 0 64 64" width="54" height="54" class="sensei-stickman-svg">
+                  <!-- Aura -->
+                  <circle cx="32" cy="22" r="18" fill="rgba(56, 189, 248, 0.14)" stroke="rgba(56, 189, 248, 0.45)" stroke-width="1.5" stroke-dasharray="3,3"/>
+                  <!-- Head -->
+                  <circle cx="32" cy="18" r="9" fill="#030712" stroke="#38bdf8" stroke-width="2.2"/>
+                  <!-- Red Warrior Headband & Tails -->
+                  <path d="M22 17 Q32 14 42 17" stroke="#ef4444" stroke-width="3" stroke-linecap="round"/>
+                  <path d="M22 17 Q15 16 10 22" stroke="#ef4444" stroke-width="2.4" stroke-linecap="round" fill="none"/>
+                  <path d="M22 17 Q16 23 12 29" stroke="#ef4444" stroke-width="2" stroke-linecap="round" fill="none"/>
+                  <!-- Keen White Eye Dot -->
+                  <circle cx="35" cy="18" r="1.5" fill="#ffffff"/>
+                  <!-- Spine/Torso -->
+                  <line x1="32" y1="27" x2="32" y2="44" stroke="#ffffff" stroke-width="3.2" stroke-linecap="round"/>
+                  <!-- Left Arm Holding Giant Calligraphy Brush -->
+                  <line x1="32" y1="31" x2="44" y2="28" stroke="#ffffff" stroke-width="2.6" stroke-linecap="round"/>
+                  <line x1="42" y1="31" x2="54" y2="15" stroke="#f59e0b" stroke-width="3.5" stroke-linecap="round"/>
+                  <polygon points="54,15 59,9 56,7 51,13" fill="#38bdf8"/>
+                  <circle cx="58" cy="9" r="2.5" fill="#38bdf8"/>
+                  <!-- Right Arm in balancing guard -->
+                  <line x1="32" y1="31" x2="21" y2="36" stroke="#ffffff" stroke-width="2.6" stroke-linecap="round"/>
+                  <!-- Agile Legs in dynamic combat footing -->
+                  <line x1="32" y1="44" x2="20" y2="58" stroke="#ffffff" stroke-width="3.2" stroke-linecap="round"/>
+                  <line x1="32" y1="44" x2="44" y2="58" stroke="#ffffff" stroke-width="3.2" stroke-linecap="round"/>
+                </svg>
+              </div>
+              <div class="trick-title-block">
+                <div class="trick-eyebrow">
+                  <span class="trick-fire-icon">🔥</span>
+                  <span>SENSEI'S SECRET ART CODEX · 15 MASTER KATAS</span>
+                </div>
+                <h2 class="trick-gallery-title">STICKMAN SECRET TRICKS &amp; MOVES</h2>
+                <p class="trick-gallery-subtitle">
+                  Pick a master scroll — watch Sensei Stickman physically leap onto your canvas &amp; paint it stroke-by-stroke!
+                </p>
               </div>
             </div>
-            <button class="trick-gallery-close-btn" id="btn-close-trick-gallery" aria-label="Close Gallery">✕</button>
+
+            <div class="trick-header-right">
+              <div class="sensei-speech-bubble" aria-hidden="true">
+                <span>“Pick a move, apprentice! Watch my brush dance!”</span>
+              </div>
+              <button class="trick-gallery-close-btn" id="btn-close-trick-gallery" aria-label="Close Gallery" title="Close Gallery">
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round">
+                  <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                </svg>
+              </button>
+            </div>
           </div>
 
-          <!-- Filter Category Tabs -->
+          <!-- Martial Arts Scroll Filter Bar -->
           <div class="trick-filter-bar" id="trick-filter-bar">
-            <button class="trick-filter-chip active" data-cat="All">All (${TRICK_GALLERY.length})</button>
-            <button class="trick-filter-chip" data-cat="Landscapes">Landscapes</button>
-            <button class="trick-filter-chip" data-cat="Nature">Nature</button>
-            <button class="trick-filter-chip" data-cat="Storybook">Storybook</button>
-            <button class="trick-filter-chip" data-cat="Adventure">Adventure</button>
-            <button class="trick-filter-chip" data-cat="Space">Space</button>
-            <button class="trick-filter-chip" data-cat="Classics">Classics</button>
+            <button class="trick-filter-chip active" data-cat="All"><span class="chip-icon">📜</span> All Scrolls (${TRICK_GALLERY.length})</button>
+            <button class="trick-filter-chip" data-cat="Landscapes"><span class="chip-icon">⛰️</span> Landscapes</button>
+            <button class="trick-filter-chip" data-cat="Nature"><span class="chip-icon">🌸</span> Nature</button>
+            <button class="trick-filter-chip" data-cat="Storybook"><span class="chip-icon">🏡</span> Storybook</button>
+            <button class="trick-filter-chip" data-cat="Adventure"><span class="chip-icon">⚡</span> Adventure</button>
+            <button class="trick-filter-chip" data-cat="Space"><span class="chip-icon">🚀</span> Space Realm</button>
+            <button class="trick-filter-chip" data-cat="Classics"><span class="chip-icon">🥋</span> Sensei Classics</button>
           </div>
 
           <!-- Cards Grid -->
@@ -2735,18 +2776,40 @@
         ? TRICK_GALLERY
         : TRICK_GALLERY.filter(t => t.category === this.currentCategory);
 
-      filtered.forEach(trick => {
+      const getBeltBadge = (diff) => {
+        const d = (diff || '').toLowerCase();
+        if (d === 'beginner') return { label: '🌱 NOVICE', cls: 'diff-novice' };
+        if (d === 'easy') return { label: '⚡ BLUE BELT', cls: 'diff-blue-belt' };
+        if (d === 'medium') return { label: '🥋 BLACK BELT', cls: 'diff-black-belt' };
+        if (d === 'advanced') return { label: '🔥 GRAND MASTER', cls: 'diff-grand-master' };
+        return { label: `🥋 ${diff}`, cls: 'diff-blue-belt' };
+      };
+
+      filtered.forEach((trick, idx) => {
         const card = document.createElement('div');
         card.className = 'trick-card';
         card.dataset.trickId = trick.id;
 
-        const diffClass = `diff-${trick.difficulty.toLowerCase()}`;
+        const belt = getBeltBadge(trick.difficulty);
 
         card.innerHTML = `
+          <!-- Paper Art Canvas Frame with Manga Ink Border -->
           <div class="trick-card-preview-wrap">
-            <canvas class="trick-card-canvas" width="240" height="135"></canvas>
-            <span class="trick-diff-badge ${diffClass}">${trick.difficulty}</span>
+            <canvas class="trick-card-canvas" width="480" height="270"></canvas>
+            
+            <!-- Kata Number Tag -->
+            <div class="trick-preview-kata-tag">KATA #${String(idx + 1).padStart(2, '0')}</div>
+
+            <!-- Top-Left Hanko Artist Seal Stamp -->
+            <div class="trick-hanko-seal" title="Stickman Original Scene">
+              <span>🥋 SENSEI</span>
+            </div>
+
+            <!-- Belt Rank Mastery Badge -->
+            <span class="trick-diff-badge ${belt.cls}">${belt.label}</span>
           </div>
+
+          <!-- Card Body -->
           <div class="trick-card-body">
             <div class="trick-card-header-row">
               <span class="trick-card-name">${trick.badge} ${trick.name}</span>
@@ -2754,17 +2817,26 @@
             </div>
             <p class="trick-card-desc">${trick.description}</p>
             <button class="trick-execute-btn" data-trick-id="${trick.id}">
-              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="5 3 19 12 5 21 5 3"/></svg>
-              <span>EXECUTE SPECIAL MOVE</span>
+              <svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor">
+                <polygon points="5 3 19 12 5 21 5 3"/>
+              </svg>
+              <span>⚡ SUMMON STICKMAN TO DRAW</span>
             </button>
           </div>
         `;
 
-        // Render actual live miniature illustration into the preview canvas
+        // Render actual live miniature illustration into the preview canvas on clean white paper
         const canvas = card.querySelector('.trick-card-canvas');
         if (canvas) {
           const ctx = canvas.getContext('2d');
+          // Fill background with bright drawing sheet canvas
+          ctx.fillStyle = '#ffffff';
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+          // Draw the illustration with high resolution
+          ctx.save();
           trick.draw(ctx, canvas.width, canvas.height, this.paintApp);
+          ctx.restore();
         }
 
         // Execute click
