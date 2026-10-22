@@ -54,6 +54,36 @@ body, html {
   color: var(--text-main);
   font-size: 13px;
   -webkit-font-smoothing: antialiased;
+  touch-action: manipulation;
+  overscroll-behavior: none;
+}
+
+#drawing-workspace,
+.canvas-stage,
+.canvas-ink-wrapper,
+.paper-container,
+.paper-sheet,
+.canvas-layer,
+.color-wheel-canvas,
+.warrior-slider {
+  touch-action: none;
+}
+
+/* Desktop defaults: mobile-only elements remain strictly hidden on desktop */
+.sidebar-backdrop {
+  display: none;
+}
+
+.mobile-bottom-bar {
+  display: none;
+}
+
+.mobile-only-btn {
+  display: none;
+}
+
+.mobile-close-btn {
+  display: none;
 }
 
 button {
@@ -1228,5 +1258,289 @@ button {
   }
   .tool-btn {
     padding: 0 8px;
+  }
+}
+
+/* Tablets Portrait & Medium Screens (769px - 1024px) */
+@media (max-width: 1024px) {
+  :root {
+    --left-panel-width: 165px;
+    --right-panel-width: 180px;
+  }
+  .warrior-workspace {
+    padding: 8px 10px;
+    gap: 10px;
+  }
+  .color-wheel-wrapper {
+    width: 110px;
+    height: 110px;
+  }
+  .swatch-matrix {
+    gap: 4px;
+  }
+  .swatch-dot {
+    width: 17px;
+    height: 17px;
+  }
+}
+
+/* Mobile Phones & Tablets Portrait (<= 768px) */
+@media (max-width: 768px) {
+  :root {
+    --toolbar-height: 48px;
+    --mobile-bar-height: 52px;
+  }
+
+  .paint-app {
+    height: 100vh;
+    height: 100dvh;
+  }
+
+  /* Top Toolbar Compact on Mobile */
+  .top-toolbar {
+    padding: 0 10px;
+    gap: 8px;
+    height: var(--toolbar-height);
+  }
+
+  .brand-title {
+    font-size: 15px;
+  }
+
+  .warrior-mini-emblem {
+    display: none;
+  }
+
+  .crown-icon svg {
+    width: 17px;
+    height: 17px;
+  }
+
+  /* Primary Tools on Mobile: moved to thumb bottom dock! */
+  .toolbar-tool-group {
+    display: none;
+  }
+
+  .toolbar-action-group {
+    gap: 6px;
+  }
+
+  .action-btn {
+    width: 32px;
+    height: 32px;
+  }
+
+  .action-btn-pair {
+    display: none; /* Undo/Redo are in thumb bottom bar */
+  }
+
+  .hero-save-btn {
+    height: 32px;
+    padding: 0 10px;
+    font-size: 11px;
+    gap: 5px;
+  }
+
+  .hero-save-btn svg {
+    width: 14px;
+    height: 14px;
+  }
+
+  .zoom-widget {
+    display: none;
+  }
+
+  .mobile-only-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* Workspace becomes 1-column full screen stage */
+  .warrior-workspace {
+    grid-template-columns: 1fr;
+    height: calc(100vh - var(--toolbar-height) - var(--mobile-bar-height));
+    height: calc(100dvh - var(--toolbar-height) - var(--mobile-bar-height));
+    padding: 6px;
+    gap: 0;
+  }
+
+  .canvas-stage {
+    padding: 4px;
+  }
+
+  .bottom-battle-ribbon {
+    display: none; /* Dedicated maximum drawing stage for mobile */
+  }
+
+  /* Backdrop Overlay for Slide-out Drawers */
+  .sidebar-backdrop {
+    display: block;
+    position: fixed;
+    inset: 0;
+    background: rgba(2, 6, 15, 0.78);
+    backdrop-filter: blur(5px);
+    -webkit-backdrop-filter: blur(5px);
+    z-index: 180;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.25s ease;
+  }
+
+  .sidebar-backdrop.active {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  /* Left Sidebar Drawer (Colors & Brushes) */
+  .left-sidebar {
+    position: fixed;
+    top: var(--toolbar-height);
+    left: 0;
+    bottom: var(--mobile-bar-height);
+    width: min(320px, 86vw);
+    height: calc(100vh - var(--toolbar-height) - var(--mobile-bar-height));
+    height: calc(100dvh - var(--toolbar-height) - var(--mobile-bar-height));
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    transform: translateX(-105%);
+    transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+    z-index: 200;
+    background: rgba(9, 13, 22, 0.97);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    padding: 12px;
+    gap: 12px;
+    justify-content: flex-start;
+    box-shadow: 10px 0 32px rgba(0, 0, 0, 0.92);
+    border-right: 1.5px solid var(--accent-cyan);
+  }
+
+  .left-sidebar.mobile-open {
+    transform: translateX(0);
+  }
+
+  /* Right Sidebar Drawer (Layers & Settings) */
+  .right-sidebar {
+    position: fixed;
+    top: var(--toolbar-height);
+    right: 0;
+    bottom: var(--mobile-bar-height);
+    width: min(320px, 86vw);
+    height: calc(100vh - var(--toolbar-height) - var(--mobile-bar-height));
+    height: calc(100dvh - var(--toolbar-height) - var(--mobile-bar-height));
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    transform: translateX(105%);
+    transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+    z-index: 200;
+    background: rgba(9, 13, 22, 0.97);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    padding: 12px;
+    gap: 12px;
+    justify-content: flex-start;
+    box-shadow: -10px 0 32px rgba(0, 0, 0, 0.92);
+    border-left: 1.5px solid var(--accent-cyan);
+  }
+
+  .right-sidebar.mobile-open {
+    transform: translateX(0);
+  }
+
+  .mobile-close-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    border-radius: 4px;
+    background: rgba(255, 255, 255, 0.1);
+    color: #ffffff;
+    font-size: 13px;
+    font-weight: 900;
+    cursor: pointer;
+  }
+
+  .mobile-close-btn:hover {
+    background: rgba(239, 68, 68, 0.3);
+    color: #ef4444;
+  }
+
+  /* Mobile Bottom Navigation Bar */
+  .mobile-bottom-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-around;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: var(--mobile-bar-height);
+    background: rgba(9, 13, 22, 0.96);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border-top: 1.5px solid var(--border-neon-blue);
+    box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.85);
+    z-index: 150;
+    padding: 0 4px;
+  }
+
+  .mobile-bottom-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 42px;
+    height: 44px;
+    border-radius: 6px;
+    color: var(--text-muted);
+    transition: all 0.15s ease;
+    gap: 2px;
+  }
+
+  .mobile-bottom-btn:hover,
+  .mobile-bottom-btn:active {
+    color: var(--text-main);
+  }
+
+  .mobile-bottom-btn.active {
+    color: var(--accent-cyan);
+    background: rgba(56, 189, 248, 0.14);
+    box-shadow: 0 0 10px rgba(56, 189, 248, 0.35);
+  }
+
+  .mobile-color-dot {
+    width: 17px;
+    height: 17px;
+    border-radius: 50%;
+    border: 2px solid #ffffff;
+    box-shadow: 0 0 6px rgba(0, 0, 0, 0.6);
+  }
+
+  .mobile-btn-sub {
+    font-size: 7.5px;
+    font-weight: 800;
+    letter-spacing: 0.4px;
+  }
+
+  /* Popovers on Mobile */
+  #settings-popover-wrapper .popover-menu {
+    left: auto;
+    right: 0;
+    transform: translateY(4px);
+  }
+}
+
+/* Very Small Phones (<= 400px) */
+@media (max-width: 400px) {
+  .mobile-bottom-btn {
+    width: 36px;
+  }
+  .brand-title {
+    font-size: 14px;
+  }
+  .mobile-btn-sub {
+    display: none;
   }
 }

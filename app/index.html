@@ -16,6 +16,9 @@
 
   <!-- App Container -->
   <div id="app" class="paint-app">
+    <!-- Mobile Sidebar Backdrop Overlay -->
+    <div class="sidebar-backdrop" id="sidebar-backdrop"></div>
+
     <!-- TOP TOOLBAR: Exact Warrior Recreation -->
     <header class="top-toolbar" id="top-toolbar">
       <!-- Left: Comic Graffiti Brand Mark & Slogan -->
@@ -195,12 +198,11 @@
           </button>
         </div>
 
-        <!-- Zoom Control Widget -->
-        <div class="zoom-widget">
-          <button class="zoom-btn" id="btn-zoom-out" title="Zoom Out">−</button>
-          <span class="zoom-text" id="zoom-value">77%</span>
-          <button class="zoom-btn" id="btn-zoom-in" title="Zoom In">+</button>
-        </div>
+
+        <!-- Mobile Palette Quick Toggle (Shown only <= 768px) -->
+        <button class="action-btn mobile-only-btn" id="btn-mobile-palette-top" aria-label="Colors & Brushes" title="Colors & Brushes">
+          <div class="mobile-color-dot" id="mobile-top-color-dot" style="background:#000000;"></div>
+        </button>
 
         <!-- Layers Quick Toggle -->
         <button class="action-btn has-tooltip" id="btn-layers-toggle" aria-label="Layers" data-tooltip="Layers">
@@ -268,6 +270,7 @@
         <section class="warrior-panel color-panel" id="panel-colors">
           <div class="panel-header">
             <span class="panel-title">COLORS</span>
+            <button class="mobile-close-btn" id="btn-close-left-sidebar" aria-label="Close sidebar">✕</button>
           </div>
           <div class="panel-body color-panel-body">
             <!-- Circular HSV Color Wheel with SV Picker Box -->
@@ -494,7 +497,10 @@
         <section class="warrior-panel layers-panel" id="panel-layers">
           <div class="panel-header layers-panel-header">
             <span class="panel-title blue-title">LAYERS</span>
-            <button class="add-layer-btn" id="btn-add-layer" title="Add Layer">+</button>
+            <div style="display:flex;align-items:center;gap:6px">
+              <button class="add-layer-btn" id="btn-add-layer" title="Add Layer">+</button>
+              <button class="mobile-close-btn" id="btn-close-right-sidebar" aria-label="Close sidebar">✕</button>
+            </div>
           </div>
           <div class="panel-body layers-panel-body">
             <div class="layer-opacity-control" style="display:none">
@@ -553,6 +559,57 @@
         </section>
       </aside>
     </main>
+
+    <!-- Mobile Bottom Navigation Bar (Active on phones & small screens) -->
+    <nav class="mobile-bottom-bar" id="mobile-bottom-bar" aria-label="Mobile Tools">
+      <!-- 1. Color / Brush Drawer Button with live color indicator -->
+      <button class="mobile-bottom-btn" id="btn-mobile-palette" title="Colors & Brushes">
+        <div class="mobile-color-dot" id="mobile-active-color-dot" style="background:#000000;"></div>
+        <span class="mobile-btn-sub">COLOR</span>
+      </button>
+
+      <!-- 2. Pencil -->
+      <button class="mobile-bottom-btn mobile-tool-btn active" data-tool="pencil" id="m-tool-pencil" title="Pencil">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg>
+        <span class="mobile-btn-sub">PENCIL</span>
+      </button>
+
+      <!-- 3. Eraser -->
+      <button class="mobile-bottom-btn mobile-tool-btn" data-tool="eraser" id="m-tool-eraser" title="Eraser">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="m7 21 13-13-6-6L1 15l6 6z"/><path d="m22 21h-8"/></svg>
+        <span class="mobile-btn-sub">ERASER</span>
+      </button>
+
+      <!-- 4. Fill Bucket -->
+      <button class="mobile-bottom-btn mobile-tool-btn" data-tool="bucket" id="m-tool-bucket" title="Fill">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="m19 11-8-8-8.5 8.5a2.12 2.12 0 0 0 0 3l5 5a2.12 2.12 0 0 0 3 0L19 11z"/><path d="m5 2 5 5"/><path d="M2 13h15"/><path d="M22 20a2 2 0 1 1-4 0c0-1.6 2-3 2-3s2 1.4 2 3z"/></svg>
+        <span class="mobile-btn-sub">FILL</span>
+      </button>
+
+      <!-- 5. Text Tool -->
+      <button class="mobile-bottom-btn mobile-tool-btn" data-tool="text" id="m-tool-text" title="Text">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><polyline points="4 7 4 4 20 4 20 7"/><line x1="9" y1="20" x2="15" y2="20"/><line x1="12" y1="4" x2="12" y2="20"/></svg>
+        <span class="mobile-btn-sub">TEXT</span>
+      </button>
+
+      <!-- 6. Undo -->
+      <button class="mobile-bottom-btn" id="m-btn-undo" title="Undo">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
+        <span class="mobile-btn-sub">UNDO</span>
+      </button>
+
+      <!-- 7. Redo -->
+      <button class="mobile-bottom-btn" id="m-btn-redo" title="Redo">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+        <span class="mobile-btn-sub">REDO</span>
+      </button>
+
+      <!-- 8. Layers Drawer -->
+      <button class="mobile-bottom-btn" id="m-btn-layers" title="Layers & Settings">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
+        <span class="mobile-btn-sub">LAYERS</span>
+      </button>
+    </nav>
 
     <!-- Subtle Toast Notification (e.g. "Saved PNG") -->
     <div id="toast" class="toast hidden">

@@ -9,6 +9,7 @@ class StickmanPaintApp {
     this.canvasWidth = 1280;
     this.canvasHeight = 720;
     this.zoom = 1.0;
+    this.baseFitScale = 1.0;
 
     // Tool & Brush State
     this.currentTool = 'pencil'; // 'pencil', 'brush', 'eraser', 'bucket', 'eyedropper', 'shape'
@@ -21,7 +22,7 @@ class StickmanPaintApp {
 
     // Stickman Living Cursor Physics & Living State Machine
     this.stickmanPose = 'hover'; // 'hover', 'drawing', 'thinking', 'idle'
-    this.stickmanScale = 1.0; // Heroic character scale (~125px on-screen height)
+    this.stickmanScale = typeof window !== 'undefined' && window.innerWidth <= 768 ? 0.82 : 1.0;
     this.stickmanFlip = 1; // 1 = right, -1 = left
     this.stickmanVisible = false;
 
@@ -56,6 +57,8 @@ class StickmanPaintApp {
     this.startY = 0;
     this.lastX = 0;
     this.lastY = 0;
+    this.prevMidX = 0;
+    this.prevMidY = 0;
 
     // Audio Engine
     this.soundEnabled = false;
@@ -123,11 +126,51 @@ class StickmanPaintApp {
     this.tricksPopover = document.getElementById('tricks-popover-wrapper');
     this.settingsPopover = document.getElementById('settings-popover-wrapper');
 
+    // Mobile Drawers & Elements
+    this.leftSidebar = document.getElementById('left-sidebar');
+    this.rightSidebar = document.getElementById('right-sidebar');
+    this.sidebarBackdrop = document.getElementById('sidebar-backdrop');
+    this.mobileActiveColorDot = document.getElementById('mobile-active-color-dot');
+    this.mobileTopColorDot = document.getElementById('mobile-top-color-dot');
+
     // Toast
     this.toast = document.getElementById('toast');
     this.toastMsg = document.getElementById('toast-msg');
 
     this.initColorWheel();
+  }
+
+  toggleMobileSidebar(side) {
+    const isLeft = side === 'left';
+    const isRight = side === 'right';
+    const leftOpen = this.leftSidebar && this.leftSidebar.classList.contains('mobile-open');
+    const rightOpen = this.rightSidebar && this.rightSidebar.classList.contains('mobile-open');
+
+    if (isLeft) {
+      if (leftOpen) {
+        this.closeMobileSidebars();
+      } else {
+        if (this.rightSidebar) this.rightSidebar.classList.remove('mobile-open');
+        if (this.leftSidebar) this.leftSidebar.classList.add('mobile-open');
+        if (this.sidebarBackdrop) this.sidebarBackdrop.classList.add('active');
+      }
+    } else if (isRight) {
+      if (rightOpen) {
+        this.closeMobileSidebars();
+      } else {
+        if (this.leftSidebar) this.leftSidebar.classList.remove('mobile-open');
+        if (this.rightSidebar) this.rightSidebar.classList.add('mobile-open');
+        if (this.sidebarBackdrop) this.sidebarBackdrop.classList.add('active');
+      }
+    } else {
+      this.closeMobileSidebars();
+    }
+  }
+
+  closeMobileSidebars() {
+    if (this.leftSidebar) this.leftSidebar.classList.remove('mobile-open');
+    if (this.rightSidebar) this.rightSidebar.classList.remove('mobile-open');
+    if (this.sidebarBackdrop) this.sidebarBackdrop.classList.remove('active');
   }
 
   /* ==========================================================================
@@ -621,6 +664,14 @@ class StickmanPaintApp {
 
     this.paperSheet.addEventListener('pointerdown', (e) => {
       if (e.button !== 0) return;
+      if (!this.stickmanVisible) {
+        this.stickmanVisible = true;
+        this.stickmanActor.classList.add('visible');
+        this.targetX = e.clientX;
+        this.targetY = e.clientY;
+        this.currentX = e.clientX;
+        this.currentY = e.clientY;
+      }
       const pt = this.getCanvasCoords(e);
 
       // 1. Text Tool Drag Box Creation (Like Select Tool)
@@ -657,6 +708,8 @@ class StickmanPaintApp {
       this.startY = pt.y;
       this.lastX = pt.x;
       this.lastY = pt.y;
+      this.prevMidX = pt.x;
+      this.prevMidY = pt.y;
       this.strokePoints = [{ x: pt.x, y: pt.y }];
 
       // Transition Stickman into active drawing pose
@@ -714,6 +767,23 @@ class StickmanPaintApp {
       if (this.currentTool === 'select') {
         this.handleSelectPointerUp();
         return;
+      }
+
+      // Finish pencil stroke cleanly to the last pointer sample
+      if (this.currentTool === 'pencil' && this.stabilizer && this.prevMidX !== undefined) {
+        const layer = this.getActiveLayer();
+        if (layer && layer.ctx) {
+          layer.ctx.save();
+          layer.ctx.strokeStyle = this.currentColor;
+          layer.ctx.lineWidth = this.strokeSize;
+          layer.ctx.lineCap = 'round';
+          layer.ctx.lineJoin = 'round';
+          layer.ctx.beginPath();
+          layer.ctx.moveTo(this.prevMidX, this.prevMidY);
+          layer.ctx.lineTo(this.lastX, this.lastY);
+          layer.ctx.stroke();
+          layer.ctx.restore();
+        }
       }
 
       this.stopPencilAudio();
@@ -924,6 +994,60 @@ class StickmanPaintApp {
       });
     }
 
+    // Mobile Drawer Controls
+    const mobilePaletteBtn = document.getElementById('btn-mobile-palette');
+    if (mobilePaletteBtn) {
+      mobilePaletteBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this.toggleMobileSidebar('left');
+      });
+    }
+
+    const mobilePaletteTopBtn = document.getElementById('btn-mobile-palette-top');
+    if (mobilePaletteTopBtn) {
+      mobilePaletteTopBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this.toggleMobileSidebar('left');
+      });
+    }
+
+    const mobileLayersBtn = document.getElementById('m-btn-layers');
+    if (mobileLayersBtn) {
+      mobileLayersBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this.toggleMobileSidebar('right');
+      });
+    }
+
+    const topLayersBtn = document.getElementById('btn-layers-toggle');
+    if (topLayersBtn) {
+      topLayersBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this.toggleMobileSidebar('right');
+      });
+    }
+
+    if (this.sidebarBackdrop) {
+      this.sidebarBackdrop.addEventListener('click', () => this.closeMobileSidebars());
+    }
+
+    document.querySelectorAll('.mobile-close-btn').forEach(btn => {
+      btn.addEventListener('click', () => this.closeMobileSidebars());
+    });
+
+    document.querySelectorAll('.mobile-tool-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const tool = btn.dataset.tool;
+        if (tool) this.setActiveTool(tool);
+        this.closeMobileSidebars();
+      });
+    });
+
+    const mUndoBtn = document.getElementById('m-btn-undo');
+    if (mUndoBtn) mUndoBtn.addEventListener('click', () => this.undo());
+    const mRedoBtn = document.getElementById('m-btn-redo');
+    if (mRedoBtn) mRedoBtn.addEventListener('click', () => this.redo());
+
     // Close popovers on click outside
     window.addEventListener('click', (e) => {
       if (!e.target.closest('.popover-wrapper')) {
@@ -931,8 +1055,11 @@ class StickmanPaintApp {
       }
     });
 
-    // Window Resize Handling
+    // Window Resize & Orientation Handling
     window.addEventListener('resize', () => this.fitCanvasToViewport());
+    window.addEventListener('orientationchange', () => {
+      setTimeout(() => this.fitCanvasToViewport(), 120);
+    });
 
     // Keyboard Shortcuts
     window.addEventListener('keydown', (e) => {
@@ -999,10 +1126,12 @@ class StickmanPaintApp {
     if (!this.workspace || !this.paperSheet) return;
     const stage = this.canvasStage || document.getElementById('canvas-stage') || this.workspace;
     const stageRect = stage.getBoundingClientRect();
+    const isMobile = typeof window !== 'undefined' && window.innerWidth <= 768;
 
     // Leave margin so ink frame breathes beautifully and never overlaps panels
-    const availW = Math.max(300, stageRect.width - 24);
-    const availH = Math.max(180, stageRect.height - 24);
+    const margin = isMobile ? 8 : 24;
+    const availW = Math.max(120, stageRect.width - margin);
+    const availH = Math.max(120, stageRect.height - margin);
 
     let targetW = availW;
     let targetH = targetW * (9 / 16);
@@ -1011,14 +1140,32 @@ class StickmanPaintApp {
       targetW = targetH * (16 / 9);
     }
 
+    this.baseFitScale = targetW / this.canvasWidth;
+    this.applyZoom();
+
+    // Dynamic stickman scale for mobile vs desktop
+    if (isMobile) {
+      this.stickmanScale = window.innerWidth <= 480 ? 0.75 : 0.82;
+      if (this.stickman) this.stickman.scale = this.stickmanScale;
+    } else {
+      this.stickmanScale = 1.0;
+      if (this.stickman) this.stickman.scale = 1.0;
+    }
+  }
+
+  applyZoom() {
+    if (!this.paperSheet) return;
+    const effectiveScale = (this.baseFitScale || 1.0) * (this.zoom || 1.0);
+    this.paperSheet.style.transform = `scale(${effectiveScale})`;
+
+    const targetW = Math.round(this.canvasWidth * effectiveScale);
+    const targetH = Math.round(this.canvasHeight * effectiveScale);
+
     if (this.canvasInkWrapper) {
-      this.canvasInkWrapper.style.width = `${Math.floor(targetW)}px`;
-      this.canvasInkWrapper.style.height = `${Math.floor(targetH)}px`;
+      this.canvasInkWrapper.style.width = `${targetW}px`;
+      this.canvasInkWrapper.style.height = `${targetH}px`;
     }
 
-    const scale = targetW / this.canvasWidth;
-    this.paperSheet.style.transform = `scale(${scale})`;
-    this.zoom = scale;
     if (this.zoomValue) {
       this.zoomValue.textContent = `${Math.round(this.zoom * 100)}%`;
     }
@@ -1026,17 +1173,9 @@ class StickmanPaintApp {
   }
 
   setZoom(level) {
-    const clamped = Math.max(0.25, Math.min(3.0, level));
-    this.zoom = clamped;
-    this.paperSheet.style.transform = `scale(${this.zoom})`;
-    if (this.canvasInkWrapper) {
-      this.canvasInkWrapper.style.width = `${Math.round(this.canvasWidth * this.zoom)}px`;
-      this.canvasInkWrapper.style.height = `${Math.round(this.canvasHeight * this.zoom)}px`;
-    }
-    if (this.zoomValue) {
-      this.zoomValue.textContent = `${Math.round(this.zoom * 100)}%`;
-    }
-    this.updateEraserIndicator();
+    const clamped = Math.max(0.4, Math.min(3.0, level));
+    this.zoom = Math.round(clamped * 10) / 10;
+    this.applyZoom();
   }
 
   setActiveTool(tool) {
@@ -1053,6 +1192,9 @@ class StickmanPaintApp {
     this.stickmanActor.classList.toggle('tool-eraser', tool === 'eraser');
     this.updateEraserIndicator();
     document.querySelectorAll('.tool-btn').forEach(btn => {
+      btn.classList.toggle('active', btn.dataset.tool === tool);
+    });
+    document.querySelectorAll('.mobile-tool-btn').forEach(btn => {
       btn.classList.toggle('active', btn.dataset.tool === tool);
     });
 
@@ -1358,13 +1500,16 @@ class StickmanPaintApp {
 
   updateEraserIndicator() {
     const radius = this.getEraserRadius();
-    const diameter = radius * 2 * this.zoom;
+    const effectiveScale = (this.baseFitScale || 1.0) * (this.zoom || 1.0);
+    const diameter = radius * 2 * effectiveScale;
     this.app.style.setProperty('--eraser-indicator-size', `${Math.round(diameter)}px`);
   }
 
   setColor(color) {
     this.currentColor = color;
-    this.currentColorPreview.style.backgroundColor = color;
+    if (this.currentColorPreview) this.currentColorPreview.style.backgroundColor = color;
+    if (this.mobileActiveColorDot) this.mobileActiveColorDot.style.backgroundColor = color;
+    if (this.mobileTopColorDot) this.mobileTopColorDot.style.backgroundColor = color;
     if (this.stickman) {
       this.stickman.currentColor = color;
       this.stickman.triggerConfident();
@@ -1456,6 +1601,11 @@ class StickmanPaintApp {
     const ctx = layer.ctx;
 
     if (this.currentTool === 'pencil') {
+      if (this.currentBrush && this.currentBrush !== 'pencil') {
+        this.renderBrush(ctx, x, y);
+        return;
+      }
+
       ctx.save();
       ctx.strokeStyle = this.currentColor;
       ctx.lineWidth = this.strokeSize;
@@ -1463,25 +1613,28 @@ class StickmanPaintApp {
       ctx.lineJoin = 'round';
 
       if (this.stabilizer) {
-        this.strokePoints.push({ x, y });
-        if (this.strokePoints.length > 2) {
-          const p1 = this.strokePoints[this.strokePoints.length - 2];
-          const midX = (p1.x + x) / 2;
-          const midY = (p1.y + y) / 2;
-          ctx.beginPath();
-          ctx.moveTo(p1.x, p1.y);
-          ctx.quadraticCurveTo(p1.x, p1.y, midX, midY);
-          ctx.stroke();
-        }
+        // Continuous midpoint smoothing curve: connect exactly from prevMid to new mid via lastX/lastY
+        const midX = (this.lastX + x) / 2;
+        const midY = (this.lastY + y) / 2;
+
+        ctx.beginPath();
+        ctx.moveTo(this.prevMidX, this.prevMidY);
+        ctx.quadraticCurveTo(this.lastX, this.lastY, midX, midY);
+        ctx.stroke();
+
+        this.prevMidX = midX;
+        this.prevMidY = midY;
+        this.lastX = x;
+        this.lastY = y;
       } else {
         ctx.beginPath();
         ctx.moveTo(this.lastX, this.lastY);
         ctx.lineTo(x, y);
         ctx.stroke();
+        this.lastX = x;
+        this.lastY = y;
       }
       ctx.restore();
-      this.lastX = x;
-      this.lastY = y;
     } else if (this.currentTool === 'brush') {
       this.renderBrush(ctx, x, y);
     } else if (this.currentTool === 'eraser') {
@@ -2058,15 +2211,6 @@ class StickmanPaintApp {
     document.getElementById('btn-redo').disabled = this.historyIndex >= this.historyStack.length - 1;
   }
 
-  /* ==========================================================================
-     Zoom & Viewport Scaling
-     ========================================================================== */
-  setZoom(val) {
-    this.zoom = Math.min(2.5, Math.max(0.3, Math.round(val * 100) / 100));
-    this.paperSheet.style.transform = `scale(${this.zoom})`;
-    this.zoomValue.textContent = `${Math.round(this.zoom * 100)}%`;
-    this.updateEraserIndicator();
-  }
 
   clearCanvas() {
     if (this.activeTextBox) this.cancelTextBox();
