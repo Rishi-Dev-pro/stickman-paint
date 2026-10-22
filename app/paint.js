@@ -472,7 +472,9 @@ class StickmanPaintApp {
 
   renderStickmanTransform() {
     if (this.stickman) {
-      const tip = this.stickman.pencilTipLocal;
+      const tip = this.isDrawing
+        ? this.stickman.pencilTipLocal
+        : (this.stickman.getActorAnchor ? this.stickman.getActorAnchor() : this.stickman.pencilTipLocal);
       const canvasW = this.stickman.width;
       const canvasH = this.stickman.height;
 

@@ -14,6 +14,76 @@
  * - Sub-pixel zero-drift pencil tip anchor & zero-drift horizontal flip alignment
  */
 
+// ============================================================================
+// Multi-Stage Parametric Pen-Swing Arc Trajectory Keyframes (16-Frame Reference)
+// ============================================================================
+const SWING_UP_FRAMES = [
+  // Frame 1: Ready Stance (Pen pointing forward/down toward paper)
+  { t: 0.00, hx: 58, hy: 38, ex: 34, ey: 22, angle:  0.12, sLift:  0.0, lean:  0.0, backFold: 0.0 },
+  // Frame 2: Windup & Gathering Momentum (Hand dips & draws back slightly)
+  { t: 0.10, hx: 50, hy: 44, ex: 26, ey: 28, angle:  0.26, sLift: -1.2, lean:  2.0, backFold: 0.05 },
+  // Frame 3: Ignition & Lift (Elbow bends, hand sweeps upward, pen tilts up)
+  { t: 0.22, hx: 44, hy: 22, ex: 18, ey: 18, angle: -0.40, sLift:  2.8, lean:  1.0, backFold: 0.18 },
+  // Frame 4: Upward Slash (Hand reaches chest level, pen pointing 60° up)
+  { t: 0.36, hx: 36, hy: -2, ex: 10, ey:  4, angle: -1.10, sLift:  5.2, lean: -1.8, backFold: 0.35 },
+  // Frame 5-6: Overhead Crest / Apex (Hand high above head, pen crossing vertical)
+  { t: 0.52, hx: 24, hy: -32, ex:  0, ey: -16, angle: -1.95, sLift:  6.8, lean: -3.8, backFold: 0.60 },
+  // Frame 7-8: Backward Sweep Behind Head (Wrist angles, pen sweeping backward)
+  { t: 0.68, hx: 16, hy: -30, ex: -6, ey: -14, angle: -2.75, sLift:  4.5, lean: -2.5, backFold: 0.80 },
+  // Frame 9-10: Behind Neck to Shoulder (Wrapping behind neck)
+  { t: 0.82, hx: 14, hy: -18, ex:  2, ey: -10, angle: -3.75, sLift:  1.8, lean: -0.5, backFold: 0.92 },
+  // Frame 11-12: Subtle Overshoot (Settles with a small rebound)
+  { t: 0.92, hx: 24, hy: -14, ex: 16, ey:  -6, angle: -4.82, sLift:  0.0, lean:  1.2, backFold: 1.0 },
+  // Frame 13-16: Sigma Final Rest (Resting horizontally across both shoulders)
+  { t: 1.00, hx: 22, hy: -16, ex: 14, ey:  -8, angle: -4.93, sLift:  0.0, lean:  0.0, backFold: 1.0 }
+];
+
+const SWING_DOWN_FRAMES = [
+  // Frame 1: Sigma Stance (Resting on shoulder)
+  { t: 0.00, hx: 22, hy: -16, ex: 14, ey:  -8, angle: 1.35, sLift:  0.0, lean:  0.0, backFold: 1.0 },
+  // Frame 2: Lift off Shoulder (Hand grips and pushes pen up)
+  { t: 0.15, hx: 26, hy: -26, ex: 20, ey: -14, angle: 1.62, sLift:  2.5, lean: -1.5, backFold: 0.85 },
+  // Frame 3: Forward Slide & Push (Elbow pushes forward around chest)
+  { t: 0.35, hx: 36, hy: -12, ex: 28, ey:  -2, angle: 1.38, sLift:  3.5, lean:  0.5, backFold: 0.60 },
+  // Frame 4: Downward Arc Sweep (Pen sweeps forward & downward)
+  { t: 0.55, hx: 48, hy:  10, ex: 34, ey:  12, angle: 0.82, sLift:  1.8, lean:  2.5, backFold: 0.35 },
+  // Frame 5: Wrist Alignment & Extend (Aligning nib with canvas)
+  { t: 0.75, hx: 56, hy:  28, ex: 36, ey:  18, angle: 0.35, sLift: -0.5, lean:  3.5, backFold: 0.15 },
+  // Frame 6: Touchdown Slight Overshoot
+  { t: 0.90, hx: 61, hy:  42, ex: 35, ey:  23, angle: 0.08, sLift: -1.2, lean:  1.0, backFold: 0.05 },
+  // Frame 7: Ready Stance Settled (Zero-drift alignment)
+  { t: 1.00, hx: 58, hy:  38, ex: 34, ey:  22, angle: 0.12, sLift:  0.0, lean:  0.0, backFold: 0.0 }
+];
+
+function sampleKeyframes(frames, progress) {
+  const p = Math.max(0, Math.min(1, progress));
+  if (p <= 0) return frames[0];
+  if (p >= 1) return frames[frames.length - 1];
+
+  let i = 0;
+  while (i < frames.length - 1 && frames[i + 1].t < p) {
+    i++;
+  }
+
+  const f0 = frames[i];
+  const f1 = frames[i + 1];
+  const span = f1.t - f0.t;
+  const localT = span > 0 ? (p - f0.t) / span : 0;
+  // Smooth cubic easing between keyframes
+  const easedT = localT * localT * (3 - 2 * localT);
+
+  return {
+    hx: f0.hx + (f1.hx - f0.hx) * easedT,
+    hy: f0.hy + (f1.hy - f0.hy) * easedT,
+    ex: f0.ex + (f1.ex - f0.ex) * easedT,
+    ey: f0.ey + (f1.ey - f0.ey) * easedT,
+    angle: f0.angle + (f1.angle - f0.angle) * easedT,
+    sLift: f0.sLift + (f1.sLift - f0.sLift) * easedT,
+    lean: f0.lean + (f1.lean - f0.lean) * easedT,
+    backFold: f0.backFold + (f1.backFold - f0.backFold) * easedT
+  };
+}
+
 class LivingStickman {
   constructor(containerEl, options = {}) {
     this.container = containerEl;
@@ -93,11 +163,18 @@ class LivingStickman {
     this.penTwirlAngle = 0;
     this.isTwirling = false;
 
+    // Multi-Stage Pen Swing Engine (16-Frame Reference Kinematics)
+    this.swingActive = false;
+    this.swingDirection = 1; // 1 = up to Sigma, -1 = down to Ready
+    this.swingProgress = 1.0;
+    this.swingDuration = 340; // dynamically scaled with cursor speed
+    this.penMotionTrails = []; // luminous cyan arc trails
+    this.currentPose = sampleKeyframes(SWING_UP_FRAMES, 0.0);
+    this.drawingAnchor = { x: 215, y: 275 };
+
     // Upper/Lower Canvas Awareness & Signature Sigma Moment Transition
     this.isInUpperCanvas = false;
-    this.sigmaTransition = 0.0; // 0 to 1 progress during region shift
-    this.penSwingProgress = 1.0;
-    this.penSwingDirection = 1;
+    this.sigmaTransition = 0.0;
 
     // Stop reaction timer
     this.stopReactionTime = 0;
@@ -360,8 +437,7 @@ class LivingStickman {
       const inUpper = relY < 0.48; // Upper 48% is Sigma territory
       if (inUpper !== this.isInUpperCanvas && !isDrawing) {
         this.isInUpperCanvas = inUpper;
-        this.penSwingProgress = 0.0;
-        this.penSwingDirection = inUpper ? 1 : -1;
+        this.startPenSwing(inUpper ? 1 : -1);
       }
     }
 
@@ -370,6 +446,11 @@ class LivingStickman {
       this.isStopReacting = false;
       this.state = this.smoothedVelocity > 14 ? 'FAST_DRAWING' : 'DRAWING';
       this.targetElevation = 0; // Firmly anchored to paper
+      if (this.swingActive && this.swingDirection > 0) {
+        // Quickly complete descent into drawing stance if user starts drawing mid-swing
+        this.swingActive = false;
+        this.penElevation = 0.0;
+      }
     } else if (this.isStopReacting) {
       if (now - this.stopReactionTime > 550) {
         this.isStopReacting = false;
@@ -395,14 +476,43 @@ class LivingStickman {
       }
     }
 
-    // Pen Elevation & Swing Arc Animation
-    if (this.penSwingProgress < 1.0) {
-      this.penSwingProgress = Math.min(1.0, this.penSwingProgress + dt * 0.0035);
-      const t = this.penSwingProgress;
-      const ease = 1 - Math.pow(1 - t, 3);
-      this.penElevation = this.penSwingDirection > 0 ? ease : (1.0 - ease);
+    // Multi-Stage Pen Elevation & Curved Swing Arc Animation
+    if (this.swingActive) {
+      this.swingProgress += dt / this.swingDuration;
+      if (this.swingProgress >= 1.0) {
+        this.swingProgress = 1.0;
+        this.swingActive = false;
+        this.penElevation = this.swingDirection > 0 ? 1.0 : 0.0;
+      } else {
+        this.penElevation = this.swingDirection > 0 ? this.swingProgress : (1.0 - this.swingProgress);
+      }
     } else {
-      this.penElevation += (this.targetElevation - this.penElevation) * 0.18;
+      this.penElevation += (this.targetElevation - this.penElevation) * 0.16;
+    }
+
+    // Dynamic Sample of Arc Keyframes
+    if (this.swingActive) {
+      if (this.swingDirection > 0) {
+        this.currentPose = sampleKeyframes(SWING_UP_FRAMES, this.swingProgress);
+      } else {
+        this.currentPose = sampleKeyframes(SWING_DOWN_FRAMES, this.swingProgress);
+      }
+    } else if (this.penElevation >= 0.99) {
+      this.currentPose = SWING_UP_FRAMES[SWING_UP_FRAMES.length - 1];
+    } else if (this.penElevation <= 0.01) {
+      this.currentPose = SWING_UP_FRAMES[0];
+    } else {
+      this.currentPose = sampleKeyframes(SWING_UP_FRAMES, this.penElevation);
+    }
+
+    // Age motion trails
+    for (let i = this.penMotionTrails.length - 1; i >= 0; i--) {
+      const pt = this.penMotionTrails[i];
+      pt.age += dt;
+      pt.alpha -= dt * 0.0052;
+      if (pt.alpha <= 0.02) {
+        this.penMotionTrails.splice(i, 1);
+      }
     }
 
     // Directional Lean Physics (Deep athletic lean)
@@ -463,6 +573,78 @@ class LivingStickman {
   }
 
   /* ==========================================================================
+     Kinematic Control & Anchor Calibration
+     ========================================================================== */
+  startPenSwing(direction) {
+    if (this.swingDirection === direction && this.swingActive) return;
+    this.swingActive = true;
+    this.swingDirection = direction; // 1 = up to Sigma, -1 = down to Ready
+    this.swingProgress = 0.0;
+
+    // Velocity-calibrated dynamic swing duration (slow = smooth, fast = sharp flick)
+    const v = this.smoothedVelocity;
+    if (v > 20) {
+      this.swingDuration = 240; // High speed warrior whip
+    } else if (v > 8) {
+      this.swingDuration = 340; // Confident athletic swing
+    } else {
+      this.swingDuration = 480; // Smooth deliberate handling
+    }
+  }
+
+  getActorAnchor() {
+    // When drawing or drawing stance, anchor directly to the pencil nib
+    if (this.state.includes('DRAWING') || this.penElevation < 0.15) {
+      return this.pencilTipLocal;
+    }
+    // Smoothly shift to character balance center during airborne swing so body doesn't jitter
+    const blend = Math.min(1.0, (this.penElevation - 0.15) / 0.85);
+    const ease = 0.5 - 0.5 * Math.cos(blend * Math.PI);
+    return {
+      x: 215 + (145 - 215) * ease * 0.40,
+      y: 275 + (220 - 275) * ease * 0.35
+    };
+  }
+
+  /* ==========================================================================
+     Luminous Cyan Motion Trail Renderer (Frame Sheet Reference)
+     ========================================================================== */
+  renderPenMotionTrail(ctx) {
+    if (this.penMotionTrails.length < 2) return;
+
+    ctx.save();
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+
+    for (let i = 1; i < this.penMotionTrails.length; i++) {
+      const p0 = this.penMotionTrails[i - 1];
+      const p1 = this.penMotionTrails[i];
+      const alpha = Math.max(0, p1.alpha);
+
+      // Glowing Cyan Tip Trail
+      ctx.shadowColor = '#38bdf8';
+      ctx.shadowBlur = 10;
+      ctx.beginPath();
+      ctx.strokeStyle = `rgba(56, 189, 248, ${alpha * 0.85})`;
+      ctx.lineWidth = 3.8 * alpha;
+      ctx.moveTo(p0.tipX, p0.tipY);
+      ctx.lineTo(p1.tipX, p1.tipY);
+      ctx.stroke();
+
+      // Secondary Blue Tail Trail
+      ctx.shadowColor = '#60a5fa';
+      ctx.shadowBlur = 6;
+      ctx.beginPath();
+      ctx.strokeStyle = `rgba(96, 165, 250, ${alpha * 0.55})`;
+      ctx.lineWidth = 2.2 * alpha;
+      ctx.moveTo(p0.tailX, p0.tailY);
+      ctx.lineTo(p1.tailX, p1.tailY);
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+
+  /* ==========================================================================
      Skeletal Rendering Engine (Heroic Proportions & Comic Ink Linework)
      ========================================================================== */
   render(now) {
@@ -476,41 +658,52 @@ class LivingStickman {
     const rootX = 145;
     const rootY = 220 + this.bounceY;
 
-    // Draw background particles (speed lines)
+    // 1. Draw luminous cyan motion trail in spatial canvas space
+    this.renderPenMotionTrail(ctx);
+
+    // 2. Draw background particles (speed lines)
     this.drawParticles(ctx, 'back');
 
     ctx.save();
     ctx.translate(rootX, rootY);
-    ctx.rotate((this.leanAngle * Math.PI) / 180);
+    const poseLean = this.currentPose ? this.currentPose.lean : 0;
+    ctx.rotate(((this.leanAngle + poseLean) * Math.PI) / 180);
 
     // Skeletal Keypoints
     const hipX = 0;
     const hipY = 0;
 
-    // Torso: Puffed chest leaning back proudly in Sigma stance
-    const isSigmaStance = this.penElevation > 0.40;
-    const chestHeight = isSigmaStance ? 66 : 58;
-    const chestAngle = isSigmaStance ? -0.20 : 0.06;
+    // Torso: Puffed chest leaning back proudly in Sigma stance with smooth elevation blending
+    const sT = this.penElevation;
+    const chestHeight = 58 + 8 * sT;
+    const chestAngle = 0.06 + (-0.20 - 0.06) * sT;
     const chestX = Math.sin(chestAngle) * chestHeight;
     const chestY = -Math.cos(chestAngle) * chestHeight;
+
+    // Shoulder lift offsets for natural anatomical compensation
+    const sLift = this.currentPose ? this.currentPose.sLift : 0;
+    const frontShoulderX = chestX + 7;
+    const frontShoulderY = chestY + 3 - sLift;
+    const backShoulderX = chestX - 7;
+    const backShoulderY = chestY + 3 + (sLift * 0.4);
 
     // Neck & Head (Enlarged for bold, immediate readability)
     const headRadius = 26; // Massive, readable head circle
     const neckX = chestX;
-    const neckY = chestY - 14;
+    const neckY = chestY - 14 - (sLift * 0.3);
     const headCenterX = neckX;
     const headCenterY = neckY - headRadius;
 
     // Update Flowing Scarf
     this.updateScarfPhysics(16, now, neckX, neckY);
 
-    // 1. Draw Flowing Scarf Tails (Back layer)
+    // 3. Draw Flowing Scarf Tails (Back layer)
     this.renderScarfTails(ctx, neckX, neckY, now);
 
-    // 2. Draw Legs (Bold Comic Limbs)
+    // 4. Draw Legs (Bold Comic Limbs)
     this.renderLegs(ctx, hipX, hipY, now);
 
-    // 3. Draw Torso (Thick, confident comic line)
+    // 5. Draw Torso (Thick, confident comic line)
     ctx.beginPath();
     ctx.strokeStyle = '#050505';
     ctx.lineWidth = 6.2;
@@ -520,17 +713,17 @@ class LivingStickman {
     ctx.lineTo(chestX, chestY);
     ctx.stroke();
 
-    // 4. Draw Back Arm (Hand on hip akimbo when in Sigma)
-    this.renderArm(ctx, chestX - 7, chestY + 3, 'back', now);
+    // 6. Draw Back Arm (Smooth transition into hand-on-hip akimbo)
+    this.renderArm(ctx, backShoulderX, backShoulderY, 'back', now);
 
-    // 5. Draw Scarf Neck Collar
+    // 7. Draw Scarf Neck Collar
     this.renderScarfCollar(ctx, neckX, neckY, now);
 
-    // 6. Draw Head & Animated Facial Features
+    // 8. Draw Head & Animated Facial Features
     this.renderHead(ctx, headCenterX, headCenterY);
 
-    // 7. Draw Front Arm & Chunky Tactical Pen
-    this.renderArmAndPen(ctx, chestX + 7, chestY + 3, 'front', now);
+    // 9. Draw Front Arm & Chunky Tactical Pen
+    this.renderArmAndPen(ctx, frontShoulderX, frontShoulderY, 'front', now);
 
     ctx.restore();
 
@@ -971,7 +1164,7 @@ class LivingStickman {
   }
 
   /* ==========================================================================
-     Arm & Massive Tactical Pen Kinematics (90px Length, Big Glowing Crystal)
+     Arm & Massive Tactical Pen Kinematics (Multi-Stage 16-Frame Arc System)
      ========================================================================== */
   renderArm(ctx, sx, sy, layer, now) {
     if (layer === 'back') {
@@ -979,44 +1172,37 @@ class LivingStickman {
       ctx.lineWidth = 5.8;
       ctx.lineCap = 'round';
 
-      if (this.penElevation > 0.40) {
-        // HAND ON HIP (Wide akimbo triangle — bold, swaggering, unbothered)
-        const elbowX = sx - 26; // Elbow jutting out wide to side
-        const elbowY = sy + 20;
-        const handX = sx - 6;
-        const handY = sy + 34;
+      const fold = this.currentPose ? this.currentPose.backFold : (this.penElevation > 0.40 ? 1.0 : 0.0);
 
-        ctx.beginPath();
-        ctx.moveTo(sx, sy);
-        ctx.lineTo(elbowX, elbowY);
-        ctx.lineTo(handX, handY);
-        ctx.stroke();
-
-        ctx.beginPath();
-        ctx.fillStyle = '#050505';
-        ctx.arc(handX, handY, 5.0, 0, Math.PI * 2);
-        ctx.fill();
-        return;
-      }
-
-      // Counter-swing during locomotion
-      let armAngle = 0;
+      // Relaxed / locomotion counter-swing arm coordinates
+      let idleArmAngle = 0;
       if (this.state === 'SPRINTING') {
-        armAngle = -Math.sin(this.walkPhase) * 1.40;
+        idleArmAngle = -Math.sin(this.walkPhase) * 1.40;
       } else if (this.state === 'RUNNING') {
-        armAngle = -Math.sin(this.walkPhase) * 1.05;
+        idleArmAngle = -Math.sin(this.walkPhase) * 1.05;
       } else if (this.state === 'WALKING') {
-        armAngle = -Math.sin(this.walkPhase) * 0.65;
+        idleArmAngle = -Math.sin(this.walkPhase) * 0.65;
       } else if (this.state.includes('DRAWING')) {
-        armAngle = -0.60;
+        idleArmAngle = -0.60;
       } else if (this.state === 'CELEBRATING') {
-        armAngle = -2.5; // High fist pump
+        idleArmAngle = -2.5; // High fist pump
       }
 
-      const elbowX = sx + Math.sin(armAngle) * 24;
-      const elbowY = sy + Math.cos(armAngle) * 24;
-      const handX = elbowX + Math.sin(armAngle + 0.3) * 22;
-      const handY = elbowY + Math.cos(armAngle + 0.3) * 22;
+      const idleElbowX = sx + Math.sin(idleArmAngle) * 24;
+      const idleElbowY = sy + Math.cos(idleArmAngle) * 24;
+      const idleHandX = idleElbowX + Math.sin(idleArmAngle + 0.3) * 22;
+      const idleHandY = idleElbowY + Math.cos(idleArmAngle + 0.3) * 22;
+
+      // Sigma hand-on-hip akimbo pose (wide diamond elbow)
+      const akimboElbowX = sx - 26;
+      const akimboElbowY = sy + 20;
+      const akimboHandX = sx - 6;
+      const akimboHandY = sy + 34;
+
+      const elbowX = idleElbowX + (akimboElbowX - idleElbowX) * fold;
+      const elbowY = idleElbowY + (akimboElbowY - idleElbowY) * fold;
+      const handX = idleHandX + (akimboHandX - idleHandX) * fold;
+      const handY = idleHandY + (akimboHandY - idleHandY) * fold;
 
       ctx.beginPath();
       ctx.moveTo(sx, sy);
@@ -1038,6 +1224,8 @@ class LivingStickman {
 
     let handTargetX = 0;
     let handTargetY = 0;
+    let midElbowX = sx + 20;
+    let midElbowY = sy + 15;
     let penAngle = 0;
 
     const isDrawingState = this.state === 'DRAWING' || this.state === 'FAST_DRAWING';
@@ -1046,58 +1234,62 @@ class LivingStickman {
       // Planted drawing hand firmly extending to fountain nib
       handTargetX = 60;
       handTargetY = 40;
+      midElbowX = sx + 34;
+      midElbowY = sy + 22;
       penAngle = 0.12; // Pointing down to paper anchor
     } else if (this.state === 'THINKING') {
       handTargetX = 18;
       handTargetY = -30;
+      midElbowX = sx + 14;
+      midElbowY = sy - 10;
       penAngle = -2.4;
     } else if (this.state === 'CELEBRATING') {
       handTargetX = 44;
       handTargetY = -72;
+      midElbowX = sx + 28;
+      midElbowY = sy - 42;
       penAngle = -2.8;
     } else if (this.state === 'STOPPING') {
       handTargetX = -26;
       handTargetY = 20;
+      midElbowX = sx - 16;
+      midElbowY = sy + 6;
       penAngle = -2.1;
     } else if (this.state === 'SPRINTING') {
       handTargetX = -30;
       handTargetY = 14;
+      midElbowX = sx - 18;
+      midElbowY = sy + 4;
       penAngle = -2.4; // Pen held backward like a blade
     } else if (this.isTwirling) {
       handTargetX = 42;
       handTargetY = 16;
+      midElbowX = sx + 26;
+      midElbowY = sy + 10;
       penAngle = this.penTwirlAngle;
     } else {
-      const elev = this.penElevation;
-      if (elev > 0.40) {
-        // PEN RESTED HORIZONTALLY OVER SHOULDER (Iconic Sigma Pose from Reference)
-        // Hand grips near collar, pen barrel rests flat across top of shoulders
-        handTargetX = 22;
-        handTargetY = -16;
-        penAngle = 1.35; // Horizontal from left-back to right-front
-      } else {
-        handTargetX = 48 - (elev * 26);
-        handTargetY = 26 - (elev * 42);
-        penAngle = 0.28 - (elev * 2.20);
-      }
+      // Multi-Stage Kinematic Keyframe Interpolation (Curved 16-Frame Arc)
+      const pose = this.currentPose || SWING_UP_FRAMES[0];
+      handTargetX = pose.hx;
+      handTargetY = pose.hy;
+      midElbowX = sx + pose.ex;
+      midElbowY = sy + pose.ey;
+      penAngle = pose.angle;
 
-      if (this.state === 'WALKING' || this.state === 'RUNNING') {
-        const swing = Math.sin(this.walkPhase) * (this.state === 'RUNNING' ? 12 : 6);
-        handTargetX += swing * 0.4;
-        handTargetY += swing * 0.3;
+      if ((this.state === 'WALKING' || this.state === 'RUNNING') && !this.swingActive) {
+        const swing = Math.sin(this.walkPhase) * (this.state === 'RUNNING' ? 8 : 4);
+        handTargetX += swing * 0.3;
+        handTargetY += swing * 0.2;
       }
     }
 
     const targetHx = sx + handTargetX;
     const targetHy = sy + handTargetY;
 
-    // Mid-elbow
-    const midX = (sx + targetHx) / 2 + (this.penElevation > 0.40 ? 14 : 11);
-    const midY = (sy + targetHy) / 2;
-
+    // Draw arm with organic elbow bend
     ctx.beginPath();
     ctx.moveTo(sx, sy);
-    ctx.lineTo(midX, midY);
+    ctx.lineTo(midElbowX, midElbowY);
     ctx.lineTo(targetHx, targetHy);
     ctx.stroke();
 
@@ -1114,9 +1306,9 @@ class LivingStickman {
 
     const penLength = 90;
     const penTipOffset = 56; // Distance from hand to nib tip
+    const tailY = -penLength + penTipOffset;
 
     // 1. Glowing Cyan Pommel Power Orb at Tail
-    const tailY = -penLength + penTipOffset;
     ctx.beginPath();
     const gradOrb = ctx.createRadialGradient(0, tailY, 1.2, 0, tailY, 9);
     gradOrb.addColorStop(0, '#ffffff');
@@ -1205,23 +1397,49 @@ class LivingStickman {
     ctx.arc(0, penTipOffset, 2.0, 0, Math.PI * 2);
     ctx.fill();
 
-    // Dynamic Pencil Tip Calculation in local canvas coordinate space
+    ctx.restore();
+
+    // Dynamic Spatial Calculation of Pen Nib & Pommel Orb in local canvas coordinate space
     const cosA = Math.cos(penAngle);
     const sinA = Math.sin(penAngle);
     const tipRelX = -sinA * penTipOffset;
     const tipRelY = cosA * penTipOffset;
+    const tailRelX = sinA * Math.abs(tailY);
+    const tailRelY = -cosA * Math.abs(tailY);
 
-    const leanRad = (this.leanAngle * Math.PI) / 180;
+    const poseLean = this.currentPose ? this.currentPose.lean : 0;
+    const leanRad = ((this.leanAngle + poseLean) * Math.PI) / 180;
     const cosL = Math.cos(leanRad);
     const sinL = Math.sin(leanRad);
 
-    const fullLocalX = targetHx + tipRelX;
-    const fullLocalY = targetHy + tipRelY;
+    const fullTipX = targetHx + tipRelX;
+    const fullTipY = targetHy + tipRelY;
+    const fullTailX = targetHx + tailRelX;
+    const fullTailY = targetHy + tailRelY;
 
-    this.pencilTipLocal.x = 145 + (cosL * fullLocalX - sinL * fullLocalY);
-    this.pencilTipLocal.y = 220 + this.bounceY + (sinL * fullLocalX + cosL * fullLocalY);
+    const canvasTipX = 145 + (cosL * fullTipX - sinL * fullTipY);
+    const canvasTipY = 220 + this.bounceY + (sinL * fullTipX + cosL * fullTipY);
+    const canvasTailX = 145 + (cosL * fullTailX - sinL * fullTailY);
+    const canvasTailY = 220 + this.bounceY + (sinL * fullTailX + cosL * fullTailY);
 
-    ctx.restore();
+    this.pencilTipLocal.x = canvasTipX;
+    this.pencilTipLocal.y = canvasTipY;
+
+    // Record motion trail points during fast swings
+    const isSwinging = this.swingActive || (this.smoothedVelocity > 10 && !isDrawingState);
+    if (isSwinging) {
+      this.penMotionTrails.push({
+        tipX: canvasTipX,
+        tipY: canvasTipY,
+        tailX: canvasTailX,
+        tailY: canvasTailY,
+        alpha: 1.0,
+        age: 0
+      });
+      if (this.penMotionTrails.length > 20) {
+        this.penMotionTrails.shift();
+      }
+    }
   }
 
   /* ==========================================================================
