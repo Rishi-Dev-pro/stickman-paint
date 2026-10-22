@@ -19,11 +19,24 @@ class StickmanPaintApp {
     this.currentColor = '#000000';
     this.eraseAllLayers = false;
 
-    // Stickman Living Cursor Physics
+    // Stickman Living Cursor Physics & Living State Machine
     this.stickmanPose = 'hover'; // 'hover', 'drawing', 'thinking', 'idle'
-    this.stickmanScale = 0.65; // Balanced size to never obstruct drawing
+    this.stickmanScale = 1.0; // Heroic character scale (~125px on-screen height)
     this.stickmanFlip = 1; // 1 = right, -1 = left
     this.stickmanVisible = false;
+
+    // Animation State System
+    this.animState = 'hover'; // 'idle', 'hover', 'drawing', 'fastDrawing', 'stopping', 'thinking'
+    this.lastActivityTime = performance.now();
+    this.drawStopTime = 0;
+    this.microMoveStartTime = 0;
+    this.microMoveDuration = 1200;
+    this.microMoveTarget = 0;
+    this.nextMicroMoveTime = performance.now() + 3500;
+    this.idleGlanceStartTime = 0;
+    this.idleGlanceDuration = 0;
+    this.idleGlanceTarget = 0;
+    this.nextIdleGlanceTime = performance.now() + 6500;
 
     // Smooth Physics State
     this.targetX = -9999;
@@ -85,6 +98,14 @@ class StickmanPaintApp {
     this.stickmanBody = document.getElementById('stickman-body');
     this.stickmanSprite = document.getElementById('stickman-sprite');
     this.cursorCrosshair = document.getElementById('cursor-crosshair');
+
+    // Living Character Engine
+    if (typeof LivingStickman !== 'undefined') {
+      this.stickman = new LivingStickman(this.stickmanBody, {
+        scale: this.stickmanScale,
+        color: this.currentColor
+      });
+    }
 
     // Layers Drawer
     this.layersDrawer = document.getElementById('layers-drawer');
@@ -203,34 +224,65 @@ class StickmanPaintApp {
   }
 
   /* ==========================================================================
-     Living Stickman Cursor (Smooth 60 FPS Physics Loop)
+     Living Stickman Cursor (Smooth 60 FPS Physics Loop & Alive Animation)
      ========================================================================== */
   startStickmanLoop() {
+    let lastTime = performance.now();
+
     const updatePhysics = () => {
       if (this.stickmanVisible) {
-        // Tuned LERP: tight tracking when drawing (0.86), fluid organic trailing when hovering (0.34)
-        const lerpFactor = this.isDrawing ? 0.86 : 0.34;
+        const now = performance.now();
+        const dt = Math.min(now - lastTime, 64);
+        lastTime = now;
+
+        // 1. Velocity & Tracking
+        // When drawing, snap 100% tightly so pencil tip is EXACTLY on cursor with ZERO latency:
+        const lerpFactor = this.isDrawing ? 1.0 : (this.animState === 'stopping' ? 0.70 : 0.40);
         this.currentX += (this.targetX - this.currentX) * lerpFactor;
         this.currentY += (this.targetY - this.currentY) * lerpFactor;
 
-        // Velocity & Forward Movement Tilt
         const dx = this.targetX - this.prevX;
         const dy = this.targetY - this.prevY;
         this.velocity = Math.sqrt(dx * dx + dy * dy);
 
-        // Directional Flip: Face the drawing direction
-        if (Math.abs(dx) > 3) {
+        // Directional Flip: Face drawing direction (threshold 2.5px to avoid flutter)
+        if (Math.abs(dx) > 2.5) {
           this.stickmanFlip = dx > 0 ? 1 : -1;
         }
 
-        // Natural subtle forward tilt (restrained to ±10 degrees)
-        const targetTilt = Math.max(-10, Math.min(10, dx * 0.35));
-        this.tiltAngle += (targetTilt - this.tiltAngle) * 0.18;
+        // Edge turnaround awareness: when close to viewport edges, turn toward center
+        if (this.currentX < 85) this.stickmanFlip = 1;
+        else if (this.currentX > window.innerWidth - 85) this.stickmanFlip = -1;
+
+        if (this.stickman) {
+          this.stickman.flip = this.stickmanFlip;
+        }
+
+        // 2. Update LivingStickman character engine
+        if (this.stickman) {
+          const canvasRect = this.paperSheet.getBoundingClientRect();
+          this.stickman.update({
+            now,
+            dt,
+            velocity: this.velocity,
+            dx,
+            dy,
+            isDrawing: this.isDrawing,
+            cursorX: this.currentX,
+            cursorY: this.currentY,
+            canvasRect,
+            tool: this.currentTool,
+            strokeSize: this.strokeSize,
+            color: this.currentColor
+          });
+        }
 
         this.prevX = this.targetX;
         this.prevY = this.targetY;
 
         this.renderStickmanTransform();
+      } else {
+        lastTime = performance.now();
       }
 
       requestAnimationFrame(updatePhysics);
@@ -243,6 +295,13 @@ class StickmanPaintApp {
     if (this.stickmanPose === pose) return;
     this.stickmanPose = pose;
 
+    if (this.stickman) {
+      if (pose === 'drawing') this.stickman.setExpression('FOCUSED');
+      else if (pose === 'thinking') this.stickman.setExpression('THINKING');
+      else if (pose === 'idle') this.stickman.setExpression('NORMAL');
+      else this.stickman.setExpression('NORMAL');
+    }
+
     let spriteUrl = '';
     if (typeof STICKMAN_SPRITES !== 'undefined') {
       if (pose === 'drawing') spriteUrl = STICKMAN_SPRITES.stickman_drawing;
@@ -253,14 +312,59 @@ class StickmanPaintApp {
       spriteUrl = `assets/stickman_${pose}.png`;
     }
 
-    this.stickmanSprite.src = spriteUrl;
+    if (this.stickmanSprite) {
+      this.stickmanSprite.src = spriteUrl;
+    }
   }
 
   renderStickmanTransform() {
-    // Calibrated Pencil Tip Anchors:
-    // Drawing: X: 0.7764 (tipX), Y: 0.9976 (tipY)
-    // Hover: X: 0.4242, Y: 0.4908
-    // Thinking / Idle: X: 0.5, Y: 0.95
+    if (this.stickman) {
+      const tip = this.stickman.pencilTipLocal;
+      const canvasW = this.stickman.width;
+      const canvasH = this.stickman.height;
+
+      const anchorX = tip.x / canvasW;
+      const anchorY = tip.y / canvasH;
+
+      const baseWidth = 175 * this.stickmanScale;
+      const baseHeight = 190 * this.stickmanScale;
+
+      const offsetX = anchorX * baseWidth;
+      const offsetY = anchorY * baseHeight;
+
+      const posX = this.currentX - offsetX;
+      const posY = this.currentY - offsetY;
+
+      if (!window._loggedAnchor) {
+        window._loggedAnchor = true;
+        console.log('STICKMAN_DEBUG:', JSON.stringify({
+          currentX: Math.round(this.currentX),
+          currentY: Math.round(this.currentY),
+          tipX: Math.round(tip.x),
+          tipY: Math.round(tip.y),
+          anchorX: anchorX.toFixed(3),
+          anchorY: anchorY.toFixed(3),
+          baseWidth: Math.round(baseWidth),
+          baseHeight: Math.round(baseHeight),
+          offsetX: Math.round(offsetX),
+          offsetY: Math.round(offsetY),
+          posX: Math.round(posX),
+          posY: Math.round(posY)
+        }));
+      }
+
+      this.stickmanActor.style.transform = `translate3d(${posX}px, ${posY}px, 0)`;
+      this.stickmanBody.style.width = `${baseWidth}px`;
+      this.stickmanBody.style.height = `${baseHeight}px`;
+      this.stickmanBody.style.transformOrigin = `${anchorX * 100}% ${anchorY * 100}%`;
+      this.stickmanBody.style.transform = `scaleX(${this.stickman.flip})`;
+
+      // Position crosshair dot at exact cursor tip (dead-centered)
+      this.cursorCrosshair.style.transform = `translate3d(${offsetX}px, ${offsetY}px, 0) translate(-50%, -50%)`;
+      return;
+    }
+
+    // Fallback to legacy sprite anchors if LivingStickman is unavailable
     let anchorX = 0.7764;
     let anchorY = 0.9976;
 
@@ -284,7 +388,7 @@ class StickmanPaintApp {
     this.stickmanActor.style.transform = `translate3d(${posX}px, ${posY}px, 0)`;
     this.stickmanBody.style.width = `${baseWidth}px`;
     this.stickmanBody.style.transformOrigin = `${anchorX * 100}% ${anchorY * 100}%`;
-    this.stickmanBody.style.transform = `scaleX(${this.stickmanFlip}) rotate(${this.stickmanFlip * this.tiltAngle}deg)`;
+    this.stickmanBody.style.transform = `scaleX(${this.stickmanFlip})`;
 
     // Position crosshair dot at exact cursor tip (dead-centered)
     this.cursorCrosshair.style.transform = `translate3d(${offsetX}px, ${offsetY}px, 0) translate(-50%, -50%)`;
@@ -312,6 +416,11 @@ class StickmanPaintApp {
       this.targetY = e.clientY;
       this.currentX = e.clientX;
       this.currentY = e.clientY;
+      this.lastActivityTime = performance.now();
+      if (this.animState === 'idle') {
+        this.animState = 'hover';
+        this.setStickmanPose('hover');
+      }
     });
 
     this.workspace.addEventListener('pointerleave', () => {
@@ -320,8 +429,19 @@ class StickmanPaintApp {
     });
 
     this.workspace.addEventListener('pointermove', (e) => {
+      const distFromPrev = Math.hypot(e.clientX - this.targetX, e.clientY - this.targetY);
+      // Sudden big jump (> 75px in 1 frame) triggers SURPRISED reaction
+      if (distFromPrev > 75 && this.stickman && !this.isDrawing) {
+        this.stickman.triggerSurprise();
+      }
+
       this.targetX = e.clientX;
       this.targetY = e.clientY;
+      this.lastActivityTime = performance.now();
+      if (this.animState === 'idle') {
+        this.animState = 'hover';
+        this.setStickmanPose('hover');
+      }
 
       if (!this.isDrawing) return;
       const pt = this.getCanvasCoords(e);
@@ -331,6 +451,9 @@ class StickmanPaintApp {
     this.paperSheet.addEventListener('pointerdown', (e) => {
       if (e.button !== 0) return;
       this.isDrawing = true;
+      this.animState = 'drawing';
+      this.lastActivityTime = performance.now();
+      this.strokeDistance = 0;
       this.paperSheet.setPointerCapture(e.pointerId);
 
       const pt = this.getCanvasCoords(e);
@@ -352,6 +475,7 @@ class StickmanPaintApp {
       if (this.currentTool === 'bucket') {
         this.floodFill(Math.round(pt.x), Math.round(pt.y), this.currentColor);
         this.isDrawing = false;
+        this.animState = 'hover';
         this.setStickmanPose('hover');
         return;
       }
@@ -359,6 +483,7 @@ class StickmanPaintApp {
       if (this.currentTool === 'eyedropper') {
         this.pickColor(Math.round(pt.x), Math.round(pt.y));
         this.isDrawing = false;
+        this.animState = 'hover';
         this.setStickmanPose('hover');
         return;
       }
@@ -372,7 +497,9 @@ class StickmanPaintApp {
       if (!this.isDrawing) return;
       this.isDrawing = false;
       this.stopPencilAudio();
-      this.setStickmanPose('hover');
+      this.drawStopTime = performance.now();
+      this.animState = 'stopping';
+      this.lastActivityTime = performance.now();
 
       if (e && e.pointerId && this.paperSheet.hasPointerCapture && this.paperSheet.hasPointerCapture(e.pointerId)) {
         try { this.paperSheet.releasePointerCapture(e.pointerId); } catch (_) {}
@@ -386,6 +513,17 @@ class StickmanPaintApp {
       } else {
         this.saveHistory(`Draw ${this.currentTool}`);
       }
+
+      // Stickman reactions on stopping
+      if (this.strokeDistance > 1100 && this.stickman) {
+        this.stickman.setExpression('TIRED', 700);
+        setTimeout(() => {
+          if (this.stickman) this.stickman.triggerConfident();
+        }, 700);
+      } else if (this.stickman) {
+        this.stickman.triggerStoppingReaction();
+      }
+      this.strokeDistance = 0;
     };
     this.stopDrawing = stopDrawing;
 
@@ -562,6 +700,7 @@ class StickmanPaintApp {
 
     document.getElementById('slider-stickman-scale').addEventListener('input', (e) => {
       this.stickmanScale = parseFloat(e.target.value);
+      if (this.stickman) this.stickman.scale = this.stickmanScale;
     });
 
     // Close popovers on click outside
@@ -642,7 +781,12 @@ class StickmanPaintApp {
   setColor(color) {
     this.currentColor = color;
     this.currentColorPreview.style.backgroundColor = color;
-    this.reactStickmanThinking(180);
+    if (this.stickman) {
+      this.stickman.currentColor = color;
+      this.stickman.triggerConfident();
+    } else {
+      this.reactStickmanThinking(180);
+    }
   }
 
   togglePopover(wrapper) {
@@ -656,10 +800,14 @@ class StickmanPaintApp {
   }
 
   reactStickmanThinking(duration = 250) {
+    this.animState = 'thinking';
     this.setStickmanPose('thinking');
     clearTimeout(this.reactTimer);
     this.reactTimer = setTimeout(() => {
-      if (!this.isDrawing) this.setStickmanPose('hover');
+      if (!this.isDrawing) {
+        this.animState = 'hover';
+        this.setStickmanPose('hover');
+      }
     }, duration);
   }
 
@@ -719,6 +867,7 @@ class StickmanPaintApp {
   }
 
   drawStroke(x, y) {
+    this.strokeDistance = (this.strokeDistance || 0) + Math.hypot(x - this.lastX, y - this.lastY);
     const layer = this.getActiveLayer();
     const ctx = layer.ctx;
 
@@ -1052,6 +1201,7 @@ class StickmanPaintApp {
 
     ctx.restore();
     this.saveHistory('Trick: Mountain');
+    if (this.stickman) this.stickman.triggerVictory();
     this.showToast('Mountain Drawn');
   }
 
@@ -1079,6 +1229,7 @@ class StickmanPaintApp {
     }
     ctx.restore();
     this.saveHistory('Trick: Sun');
+    if (this.stickman) this.stickman.triggerVictory();
     this.showToast('Sunrise Drawn');
   }
 
@@ -1100,6 +1251,7 @@ class StickmanPaintApp {
     }
     ctx.restore();
     this.saveHistory('Trick: Stairs');
+    if (this.stickman) this.stickman.triggerVictory();
     this.showToast('Ledges Drawn');
   }
 
@@ -1126,6 +1278,7 @@ class StickmanPaintApp {
     ctx.fill();
     ctx.restore();
     this.saveHistory('Trick: Flag');
+    if (this.stickman) this.stickman.triggerVictory();
     this.showToast('Flag Planted');
   }
 
@@ -1269,6 +1422,7 @@ class StickmanPaintApp {
       this.historyIndex--;
       this.restoreHistory(this.historyStack[this.historyIndex]);
       this.updateUndoRedoUI();
+      if (this.stickman) this.stickman.triggerDisappointed();
     }
   }
 
@@ -1277,6 +1431,7 @@ class StickmanPaintApp {
       this.historyIndex++;
       this.restoreHistory(this.historyStack[this.historyIndex]);
       this.updateUndoRedoUI();
+      if (this.stickman) this.stickman.triggerConfident();
     }
   }
 
@@ -1338,7 +1493,11 @@ class StickmanPaintApp {
       }
     });
     this.saveHistory('Clear Canvas');
-    this.reactStickmanThinking(200);
+    if (this.stickman) {
+      this.stickman.triggerDisappointed();
+    } else {
+      this.reactStickmanThinking(200);
+    }
     this.showToast('Canvas Cleared');
   }
 
@@ -1361,7 +1520,11 @@ class StickmanPaintApp {
     link.href = master.toDataURL('image/png');
     link.click();
 
-    this.reactStickmanThinking(400);
+    if (this.stickman) {
+      this.stickman.triggerVictory();
+    } else {
+      this.reactStickmanThinking(400);
+    }
     this.showToast('Saved PNG');
   }
 
