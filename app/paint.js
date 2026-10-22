@@ -596,6 +596,14 @@ class StickmanPaintApp {
         this.setStickmanPose('hover');
       }
 
+      if (this.currentTool === 'text' && this.isDraggingTextBox) {
+        const pt = this.getCanvasCoords(e);
+        this.lastX = pt.x;
+        this.lastY = pt.y;
+        this.previewTextBox(this.textBoxStartX, this.textBoxStartY, pt.x, pt.y);
+        return;
+      }
+
       if (this.currentTool === 'select') {
         const pt = this.getCanvasCoords(e);
         this.lastX = pt.x;
@@ -613,10 +621,20 @@ class StickmanPaintApp {
       if (e.button !== 0) return;
       const pt = this.getCanvasCoords(e);
 
-      // 1. Text Tool Insertion
+      // 1. Text Tool Drag Box Creation (Like Select Tool)
       if (this.currentTool === 'text') {
-        this.isDrawing = false;
-        this.openTextInput(pt.x, pt.y);
+        if (this.activeTextBox && this.activeTextBox.wrap.contains(e.target)) {
+          return;
+        }
+        this.commitTextBox();
+
+        this.isDrawing = true;
+        this.isDraggingTextBox = true;
+        this.textBoxStartX = pt.x;
+        this.textBoxStartY = pt.y;
+        this.lastX = pt.x;
+        this.lastY = pt.y;
+        try { this.paperSheet.setPointerCapture(e.pointerId); } catch (_) {}
         return;
       }
 
@@ -672,6 +690,24 @@ class StickmanPaintApp {
     const stopDrawing = (e) => {
       if (!this.isDrawing) return;
       this.isDrawing = false;
+
+      // Finish Text Box dragging
+      if (this.currentTool === 'text' && this.isDraggingTextBox) {
+        this.isDraggingTextBox = false;
+        this.previewCtx.clearRect(0, 0, this.canvasWidth, this.canvasHeight);
+        const x = Math.min(this.textBoxStartX, this.lastX);
+        const y = Math.min(this.textBoxStartY, this.lastY);
+        let w = Math.abs(this.lastX - this.textBoxStartX);
+        let h = Math.abs(this.lastY - this.textBoxStartY);
+
+        if (w < 40 || h < 25) {
+          w = 260;
+          h = 75;
+        }
+
+        this.spawnTextBox(x, y, w, h);
+        return;
+      }
 
       if (this.currentTool === 'select') {
         this.handleSelectPointerUp();
@@ -938,9 +974,9 @@ class StickmanPaintApp {
           e.preventDefault();
           this.commitSelection();
         }
-        if (this.activeTextInput) {
+        if (this.activeTextBox) {
           e.preventDefault();
-          this.cancelTextInput();
+          this.cancelTextBox();
         }
       }
     });
@@ -1009,7 +1045,7 @@ class StickmanPaintApp {
       this.commitSelection();
     }
     if (this.currentTool === 'text' && tool !== 'text') {
-      this.commitTextInput();
+      this.commitTextBox();
     }
     this.currentTool = tool;
     this.stickmanActor.classList.toggle('tool-eraser', tool === 'eraser');
@@ -1019,82 +1055,103 @@ class StickmanPaintApp {
     });
 
     if (tool === 'text') {
-      this.showToast('Text Tool: Click on canvas to type');
+      this.showToast('Text Tool: Drag a box on canvas to write (create multiple boxes!)');
     } else if (tool === 'select') {
       this.showToast('Select Tool: Drag box to select and move');
     }
   }
 
   /* ==========================================================================
-     Text Tool System
+     Drag-and-Write Multi-TextBox System
      ========================================================================== */
-  openTextInput(canvasX, canvasY) {
-    if (this.activeTextInput) {
-      this.commitTextInput();
-    }
+  previewTextBox(startX, startY, curX, curY) {
+    const x = Math.min(startX, curX);
+    const y = Math.min(startY, curY);
+    const w = Math.abs(curX - startX);
+    const h = Math.abs(curY - startY);
 
-    const rect = this.paperSheet.getBoundingClientRect();
-    const scale = rect.width / this.canvasWidth;
-    const screenX = rect.left + canvasX * scale;
-    const screenY = rect.top + canvasY * scale;
+    this.previewCtx.clearRect(0, 0, this.canvasWidth, this.canvasHeight);
+    this.previewCtx.save();
+    this.previewCtx.strokeStyle = '#38bdf8';
+    this.previewCtx.lineWidth = 1.8;
+    this.previewCtx.setLineDash([5, 3]);
+    this.previewCtx.fillStyle = 'rgba(56, 189, 248, 0.12)';
+    this.previewCtx.fillRect(x, y, w, h);
+    this.previewCtx.strokeRect(x, y, w, h);
 
-    const fontSize = Math.max(18, Math.min(64, this.strokeSize * 2 + 16));
-    const scaledFontSize = Math.round(fontSize * scale);
+    // Text badge indicator
+    this.previewCtx.fillStyle = '#38bdf8';
+    this.previewCtx.font = "bold 11px 'Outfit', sans-serif";
+    this.previewCtx.fillText("TEXT BOX", x + 6, y + 15);
+    this.previewCtx.restore();
+  }
 
-    const inputWrap = document.createElement('div');
-    inputWrap.className = 'canvas-text-editor-wrap';
-    inputWrap.style.left = `${screenX}px`;
-    inputWrap.style.top = `${screenY}px`;
+  spawnTextBox(x, y, w, h) {
+    // If a text box was already active, commit it so the user can make multiple boxes
+    this.commitTextBox();
 
-    const input = document.createElement('input');
-    input.type = 'text';
-    input.className = 'canvas-text-input';
-    input.placeholder = 'Type warrior text...';
-    input.style.color = this.currentColor;
-    input.style.fontSize = `${scaledFontSize}px`;
+    const fontSize = Math.max(16, Math.min(64, Math.round(this.strokeSize * 1.6 + 14)));
 
-    inputWrap.appendChild(input);
-    document.body.appendChild(inputWrap);
+    const wrap = document.createElement('div');
+    wrap.className = 'canvas-textbox-wrapper';
+    wrap.style.left = `${Math.round(x)}px`;
+    wrap.style.top = `${Math.round(y)}px`;
+    wrap.style.width = `${Math.round(w)}px`;
+    wrap.style.height = `${Math.round(h)}px`;
 
-    this.activeTextInput = {
-      wrap: inputWrap,
-      input,
-      x: canvasX,
-      y: canvasY,
+    const textarea = document.createElement('textarea');
+    textarea.className = 'canvas-textbox-input';
+    textarea.placeholder = 'Type here... (Enter = new line, Ctrl+Enter or drag another box to place)';
+    textarea.style.color = this.currentColor;
+    textarea.style.fontSize = `${fontSize}px`;
+    textarea.style.lineHeight = '1.25';
+
+    // Commit button in top right of box
+    const commitBtn = document.createElement('button');
+    commitBtn.className = 'textbox-commit-btn';
+    commitBtn.innerHTML = '✓';
+    commitBtn.title = 'Place Text';
+    commitBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      this.commitTextBox();
+    });
+
+    wrap.appendChild(textarea);
+    wrap.appendChild(commitBtn);
+    this.paperSheet.appendChild(wrap);
+
+    this.activeTextBox = {
+      wrap,
+      textarea,
+      x,
+      y,
+      w,
+      h,
       fontSize,
       color: this.currentColor
     };
 
-    setTimeout(() => input.focus(), 15);
+    setTimeout(() => textarea.focus(), 15);
 
-    input.addEventListener('keydown', (e) => {
+    textarea.addEventListener('keydown', (e) => {
       e.stopPropagation();
-      if (e.key === 'Enter') {
+      // Ctrl+Enter or Cmd+Enter commits immediately
+      if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
         e.preventDefault();
-        this.commitTextInput();
+        this.commitTextBox();
       } else if (e.key === 'Escape') {
         e.preventDefault();
-        this.cancelTextInput();
+        this.cancelTextBox();
       }
     });
-
-    setTimeout(() => {
-      const clickHandler = (e) => {
-        if (this.activeTextInput && !this.activeTextInput.wrap.contains(e.target)) {
-          this.commitTextInput();
-          window.removeEventListener('pointerdown', clickHandler);
-        }
-      };
-      window.addEventListener('pointerdown', clickHandler);
-    }, 100);
   }
 
-  commitTextInput() {
-    if (!this.activeTextInput) return;
-    const { wrap, input, x, y, fontSize, color } = this.activeTextInput;
-    const text = input.value.trim();
+  commitTextBox() {
+    if (!this.activeTextBox) return;
+    const { wrap, textarea, x, y, w, h, fontSize, color } = this.activeTextBox;
+    const text = textarea.value.trim();
     wrap.remove();
-    this.activeTextInput = null;
+    this.activeTextBox = null;
 
     if (!text) return;
 
@@ -1106,22 +1163,51 @@ class StickmanPaintApp {
     ctx.font = `900 ${fontSize}px 'Permanent Marker', 'Outfit', sans-serif`;
     ctx.textBaseline = 'top';
     ctx.fillStyle = color;
-    ctx.shadowColor = 'rgba(0, 0, 0, 0.6)';
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.7)';
     ctx.shadowBlur = 4;
-    ctx.shadowOffsetX = 1;
-    ctx.shadowOffsetY = 1;
-    ctx.fillText(text, x, y);
-    ctx.restore();
+    ctx.shadowOffsetX = 1.5;
+    ctx.shadowOffsetY = 1.5;
 
-    this.saveHistory(`Add Text "${text.slice(0, 10)}"`);
-    this.showToast('Text committed');
+    const lineHeight = fontSize * 1.25;
+    const maxBoxWidth = Math.max(w - 12, 50);
+
+    // Auto-wrap lines so text stays within designated box width
+    const rawParagraphs = text.split('\n');
+    let currentY = y + 4;
+
+    rawParagraphs.forEach(para => {
+      const words = para.split(' ');
+      let currentLine = '';
+
+      for (let i = 0; i < words.length; i++) {
+        const testLine = currentLine ? `${currentLine} ${words[i]}` : words[i];
+        const testWidth = ctx.measureText(testLine).width;
+
+        if (testWidth > maxBoxWidth && currentLine) {
+          ctx.fillText(currentLine, x + 4, currentY);
+          currentLine = words[i];
+          currentY += lineHeight;
+        } else {
+          currentLine = testLine;
+        }
+      }
+
+      if (currentLine) {
+        ctx.fillText(currentLine, x + 4, currentY);
+        currentY += lineHeight;
+      }
+    });
+
+    ctx.restore();
+    this.saveHistory(`Add Text Box "${text.slice(0, 10)}"`);
+    this.showToast('Text placed — drag another box to write again!');
     if (this.stickman) this.stickman.triggerConfident();
   }
 
-  cancelTextInput() {
-    if (!this.activeTextInput) return;
-    this.activeTextInput.wrap.remove();
-    this.activeTextInput = null;
+  cancelTextBox() {
+    if (!this.activeTextBox) return;
+    this.activeTextBox.wrap.remove();
+    this.activeTextBox = null;
   }
 
   /* ==========================================================================
@@ -1981,6 +2067,7 @@ class StickmanPaintApp {
   }
 
   clearCanvas() {
+    if (this.activeTextBox) this.cancelTextBox();
     this.layers.forEach((l, i) => {
       l.ctx.clearRect(0, 0, this.canvasWidth, this.canvasHeight);
       if (i === 0) {
@@ -1998,6 +2085,7 @@ class StickmanPaintApp {
   }
 
   exportPNG() {
+    if (this.activeTextBox) this.commitTextBox();
     // Only exports the pure canvas artwork - NO UI, NO stickman, NO crosshair
     const master = document.createElement('canvas');
     master.width = this.canvasWidth;

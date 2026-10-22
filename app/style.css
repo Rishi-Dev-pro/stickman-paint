@@ -1136,25 +1136,69 @@ button {
 }
 
 /* ==========================================================================
-   Text Tool In-Canvas Editor
+   Text Tool In-Canvas Drag & Write Box System
    ========================================================================== */
-.canvas-text-editor-wrap {
-  position: fixed;
-  z-index: 1000;
-  transform: translate(-4px, -4px);
-  filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.7));
+.canvas-textbox-wrapper {
+  position: absolute;
+  z-index: 60;
+  border: 1.5px dashed var(--accent-cyan, #38bdf8);
+  border-radius: 4px;
+  background: rgba(10, 15, 26, 0.88);
+  backdrop-filter: blur(4px);
+  box-shadow: 0 0 16px rgba(56, 189, 248, 0.45), inset 0 0 12px rgba(0, 0, 0, 0.6);
+  display: flex;
+  box-sizing: border-box;
+  overflow: visible;
+  animation: pulse-textbox-border 2s infinite ease-in-out;
 }
 
-.canvas-text-input {
-  background: rgba(10, 15, 26, 0.94);
-  border: 1.5px dashed var(--accent-cyan);
-  border-radius: 4px;
-  padding: 4px 10px;
+@keyframes pulse-textbox-border {
+  0%, 100% { border-color: rgba(56, 189, 248, 0.85); box-shadow: 0 0 16px rgba(56, 189, 248, 0.45); }
+  50% { border-color: rgba(125, 211, 252, 1); box-shadow: 0 0 22px rgba(56, 189, 248, 0.7); }
+}
+
+.canvas-textbox-input {
+  width: 100%;
+  height: 100%;
+  background: transparent;
+  border: none;
   outline: none;
-  font-family: 'Permanent Marker', var(--font-ui), sans-serif;
+  resize: none;
+  padding: 6px 28px 6px 8px;
+  box-sizing: border-box;
+  font-family: 'Permanent Marker', 'Outfit', sans-serif;
   font-weight: 900;
-  box-shadow: 0 0 14px rgba(56, 189, 248, 0.5), inset 0 0 6px rgba(56, 189, 248, 0.2);
-  min-width: 180px;
+  color: inherit;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(56, 189, 248, 0.4) transparent;
+}
+
+.textbox-commit-btn {
+  position: absolute;
+  top: -11px;
+  right: -11px;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--accent-cyan, #38bdf8);
+  color: #050811;
+  border: 2px solid #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  font-weight: 900;
+  cursor: pointer;
+  box-shadow: 0 0 12px rgba(56, 189, 248, 0.8);
+  transition: transform 0.15s ease, background 0.15s ease, box-shadow 0.15s ease;
+  z-index: 2;
+}
+
+.textbox-commit-btn:hover {
+  transform: scale(1.18);
+  background: #ffffff;
+  box-shadow: 0 0 16px rgba(255, 255, 255, 0.9);
 }
 
 /* ==========================================================================
