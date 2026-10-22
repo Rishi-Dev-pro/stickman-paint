@@ -102,11 +102,9 @@ console.log('Validating vercel.json configuration...');
 const vercelConfigPath = path.join(ROOT_DIR, 'vercel.json');
 assert.strictEqual(fs.existsSync(vercelConfigPath), true, 'vercel.json must exist in root');
 const vercelConfig = JSON.parse(fs.readFileSync(vercelConfigPath, 'utf8'));
-assert.ok(vercelConfig.version === 2, 'vercel.json must specify version 2');
-assert.ok(Array.isArray(vercelConfig.rewrites), 'vercel.json must define rewrites');
-const rootRewrite = vercelConfig.rewrites.find(r => r.source === '/');
-assert.ok(rootRewrite && rootRewrite.destination === '/app/index.html', 'vercel.json must rewrite "/" to "/app/index.html"');
-console.log('✓ Test 6 Passed: vercel.json exists, is valid JSON, and routes correctly to app/index.html');
+assert.strictEqual(vercelConfig.outputDirectory, 'app', 'vercel.json must specify outputDirectory as "app"');
+assert.strictEqual(vercelConfig.cleanUrls, true, 'vercel.json must enable cleanUrls');
+console.log('✓ Test 6 Passed: vercel.json exists, is valid JSON, and specifies outputDirectory as "app"');
 
 // Test 7: Package Configuration Integrity
 console.log('Validating package.json configuration...');

@@ -56,7 +56,7 @@ Stickman Paint is pre-configured for seamless production deployment on **Vercel*
    - **Framework Preset**: `Other`
    - **Root Directory**: `.` *(or select `app`)*
    - **Build Command**: *(leave empty)*
-   - **Output Directory**: *(leave empty)*
+   - **Output Directory**: `app` *(pre-configured in `vercel.json`)*
 5. Click **"Deploy"**.
 
-The bundled `vercel.json` automatically handles routing, clean URLs, and security headers for static delivery.
+The bundled `vercel.json` automatically configures `outputDirectory: "app"`, clean URLs, `/app` redirects, and security headers for deterministic static delivery.
