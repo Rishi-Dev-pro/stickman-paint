@@ -1,0 +1,23 @@
+{
+  "name": "stickman-paint",
+  "version": "1.0.0",
+  "description": "Stickman Paint — Interactive warrior drawing studio with Living Stickman",
+  "private": true,
+  "scripts": {
+    "test": "node tests/trick_playback.test.js && node tests/e2e_browser_simulation.test.js && node tests/deployment_verification.test.js",
+    "test:playback": "node tests/trick_playback.test.js",
+    "test:e2e": "node tests/e2e_browser_simulation.test.js",
+    "test:deploy": "node tests/deployment_verification.test.js",
+    "build": "echo 'Static site ready for production'",
+    "start": "npx serve app"
+  },
+  "keywords": [
+    "canvas",
+    "paint",
+    "drawing",
+    "stickman",
+    "interactive"
+  ],
+  "author": "",
+  "license": "MIT"
+}

@@ -1,0 +1,19 @@
+# Dependencies
+node_modules/
+
+# Vercel
+.vercel/
+
+# Environment Variables
+.env
+.env*.local
+.env.development
+.env.test
+.env.production
+
+# Operating System & IDE Files
+.DS_Store
+Thumbs.db
+*.log
+.system_generated/
+scratch/
