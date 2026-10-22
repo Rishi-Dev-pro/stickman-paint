@@ -3,105 +3,87 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Stickman Paint</title>
+  <title>Stickman Paint — Warrior Edition</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Permanent+Marker&family=Outfit:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
 </head>
-<body class="theme-dark">
+<body class="theme-dark warrior-theme">
+  <!-- Layer 1: Warrior Background Artwork Chrome (NEVER exported) -->
+  <div class="warrior-bg-layer" id="warrior-bg-layer" aria-hidden="true"></div>
+  <div class="warrior-vignette-overlay" aria-hidden="true"></div>
+
+  <!-- App Container -->
   <div id="app" class="paint-app">
-    <!-- Top Bar: Minimal, Compact (~48px) -->
-    <header class="top-bar">
-      <!-- Left: Subtle Brand Mark -->
-      <div class="top-left">
-        <div class="brand">
-          <div class="brand-avatar">
-            <!-- Stylized Stickman Figure SVG -->
-            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <circle cx="12" cy="5" r="3"/>
-              <path d="M12 8v8M8 12l4-2 4 2M9 21l3-5 3 5"/>
-            </svg>
+    <!-- TOP TOOLBAR: Exact Warrior Recreation -->
+    <header class="top-toolbar" id="top-toolbar">
+      <!-- Left: Comic Graffiti Brand Mark & Slogan -->
+      <div class="toolbar-brand-group">
+        <div class="crown-icon">
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="#ef4444" stroke="#ffffff" stroke-width="1.2">
+            <path d="M2 19h20L19 7l-5 6-2-8-2 8-5-6-3 12z"/>
+          </svg>
+        </div>
+        <div class="brand-text-block">
+          <span class="brand-title">STICKMAN <span class="paint-glow">PAINT</span></span>
+          <div class="brand-slogan-wrap">
+            <span class="slogan-word">DRAW</span>
+            <span class="slogan-word">CREATE</span>
+            <span class="slogan-word">FIGHT</span>
+            <span class="slogan-word">EXPRESS</span>
           </div>
-          <span class="brand-name">Stickman Paint</span>
+        </div>
+        <!-- Stylized warrior silhouette emblem -->
+        <div class="warrior-mini-emblem" title="Stickman Warrior">
+          <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="#38bdf8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="5" r="3" fill="#ffffff" stroke="#000000"/>
+            <path d="M12 8v7M7 11l5-1 5 1M8 21l4-6 4 6M4 6l4 3M20 6l-4 3"/>
+          </svg>
         </div>
       </div>
 
-      <!-- Center: Primary Drawing Tools -->
-      <nav class="tool-dock">
-        <!-- 1. Pencil (Default) -->
+      <!-- Center: 8 Primary Tool Buttons with Pill Styling -->
+      <nav class="toolbar-tool-group" id="primary-tools">
+        <!-- 1. Pencil -->
         <button class="tool-btn active has-tooltip" id="tool-pencil" data-tool="pencil" aria-label="Pencil (P)" data-tooltip="Pencil · P">
-          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/>
           </svg>
+          <span class="tool-label">PENCIL</span>
         </button>
 
-        <!-- 2. Brushes (Popover) -->
-        <div class="popover-wrapper" id="brush-popover-wrapper">
-          <button class="tool-btn has-tooltip" id="tool-brush" data-tool="brush" aria-label="Brushes (B)" data-tooltip="Brushes · B">
-            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-              <path d="m9.06 11.9 8.07-8.06a2.85 2.85 0 1 1 4.03 4.03l-8.06 8.08"/>
-              <path d="M7.07 14.94c-1.66 0-3 1.35-3 3.02 0 1.33-2.5 1.52-2 2.5.42.85 1.7 1.54 3.07 1.54 2.57 0 4.86-1.93 4.86-4.5 0-1.42-1.07-2.56-2.93-2.56z"/>
-            </svg>
-          </button>
-          <div class="popover-menu brush-menu" id="brush-menu">
-            <div class="popover-header">Brush Style</div>
-            <div class="brush-grid">
-              <button class="brush-opt active" data-brush="pencil">
-                <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M17 3a2.8 2.8 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg>
-                <span>Pencil</span>
-              </button>
-              <button class="brush-opt" data-brush="ink">
-                <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8"><path d="m12 19 7-7 3 3-7 7-3-3z"/><path d="m18 13-1.5-7.5L2 2l3.5 14.5L13 18"/><path d="m2 2 7.586 7.586"/><circle cx="11" cy="11" r="2"/></svg>
-                <span>Ink Pen</span>
-              </button>
-              <button class="brush-opt" data-brush="marker">
-                <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8"><path d="m14 2 8 8L10 22H2v-8L14 2z"/><path d="m9 7 8 8"/></svg>
-                <span>Marker</span>
-              </button>
-              <button class="brush-opt" data-brush="crayon">
-                <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8"><path d="m18 2 4 4-13 13-5 1 1-5 13-13z"/><path d="m15 5 4 4"/></svg>
-                <span>Crayon</span>
-              </button>
-              <button class="brush-opt" data-brush="watercolor">
-                <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/></svg>
-                <span>Watercolor</span>
-              </button>
-              <button class="brush-opt" data-brush="airbrush">
-                <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="1"/><circle cx="8" cy="10" r="1"/><circle cx="16" cy="10" r="1"/><circle cx="10" cy="15" r="1"/><circle cx="14" cy="15" r="1"/><circle cx="12" cy="6" r="1"/><circle cx="6" cy="14" r="1"/><circle cx="18" cy="14" r="1"/></svg>
-                <span>Airbrush</span>
-              </button>
-            </div>
-          </div>
-        </div>
-
-        <!-- 3. Eraser -->
+        <!-- 2. Eraser -->
         <button class="tool-btn has-tooltip" id="tool-eraser" data-tool="eraser" aria-label="Eraser (E)" data-tooltip="Eraser · E">
-          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="m7 21 13-13-6-6L1 15l6 6z"/><path d="m22 21h-8"/>
           </svg>
+          <span class="tool-label">ERASER</span>
         </button>
 
-        <!-- 4. Fill Bucket -->
+        <!-- 3. Fill -->
         <button class="tool-btn has-tooltip" id="tool-bucket" data-tool="bucket" aria-label="Fill (G)" data-tooltip="Fill · G">
-          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="m19 11-8-8-8.5 8.5a2.12 2.12 0 0 0 0 3l5 5a2.12 2.12 0 0 0 3 0L19 11z"/><path d="m5 2 5 5"/><path d="M2 13h15"/><path d="M22 20a2 2 0 1 1-4 0c0-1.6 2-3 2-3s2 1.4 2 3z"/>
           </svg>
+          <span class="tool-label">FILL</span>
         </button>
 
-        <!-- 5. Eyedropper -->
-        <button class="tool-btn has-tooltip" id="tool-eyedropper" data-tool="eyedropper" aria-label="Color Picker (I)" data-tooltip="Color Picker · I">
-          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <!-- 4. Eyedropper -->
+        <button class="tool-btn has-tooltip" id="tool-eyedropper" data-tool="eyedropper" aria-label="Eyedropper (I)" data-tooltip="Eyedropper · I">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="m14.5 2 7.5 7.5-3 3-7.5-7.5 3-3z"/><path d="m11.5 5-9.5 9.5V22h7.5l9.5-9.5"/>
           </svg>
+          <span class="tool-label">EYEDROPPER</span>
         </button>
 
-        <!-- 6. Shapes (Popover) -->
+        <!-- 5. Shapes (Popover) -->
         <div class="popover-wrapper" id="shape-popover-wrapper">
           <button class="tool-btn has-tooltip" id="tool-shapes-btn" aria-label="Shapes" data-tooltip="Shapes">
-            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <rect x="3" y="3" width="18" height="18" rx="4"/>
             </svg>
+            <span class="tool-label">SHAPES</span>
           </button>
           <div class="popover-menu shapes-menu" id="shapes-menu">
             <div class="popover-header">Shapes</div>
@@ -131,18 +113,32 @@
           </div>
         </div>
 
-        <div class="tool-divider"></div>
+        <!-- 6. Text Tool -->
+        <button class="tool-btn has-tooltip" id="tool-text" data-tool="text" aria-label="Text (T)" data-tooltip="Text · T">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="4 7 4 4 20 4 20 7"/><line x1="12" y1="4" x2="12" y2="20"/><line x1="8" y1="20" x2="16" y2="20"/>
+          </svg>
+          <span class="tool-label">TEXT</span>
+        </button>
 
-        <!-- 7. Stickman Tricks Popover (Playful & Elegant) -->
+        <!-- 7. Select Tool -->
+        <button class="tool-btn has-tooltip" id="tool-select" data-tool="select" aria-label="Select (S)" data-tooltip="Select · S">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="3 3">
+            <rect x="3" y="3" width="18" height="18" rx="2"/>
+          </svg>
+          <span class="tool-label">SELECT</span>
+        </button>
+
+        <!-- 8. Special Red Glowing TRICKS Button -->
         <div class="popover-wrapper" id="tricks-popover-wrapper">
-          <button class="tool-btn tricks-btn has-tooltip" id="btn-stickman-tricks" aria-label="Stickman Tricks" data-tooltip="Stickman Tricks">
-            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-              <path d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3L12 3z"/>
+          <button class="tool-btn tricks-glow-btn has-tooltip" id="btn-stickman-tricks" aria-label="Tricks (Special Ability)" data-tooltip="Stickman Tricks">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="m12 2 2.4 6.6L21 11l-6.6 2.4L12 20l-2.4-6.6L3 11l6.6-2.4L12 2z"/>
             </svg>
-            <span class="tricks-label">Tricks</span>
+            <span class="tool-label tricks-text">TRICKS</span>
           </button>
           <div class="popover-menu tricks-menu" id="tricks-menu">
-            <div class="popover-header">Stickman Tricks</div>
+            <div class="popover-header">Warrior Tricks</div>
             <button class="trick-opt" id="trick-mountain">
               <div class="trick-icon-wrap">
                 <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8"><path d="m8 3 4 8 5-5 5 15H2L8 3z"/></svg>
@@ -157,8 +153,8 @@
                 <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
               </div>
               <div class="trick-info">
-                <strong>Golden Sunrise</strong>
-                <small>Warm radiant sunburst</small>
+                <strong>Blood Moon Sunrise</strong>
+                <small>Radiant warrior sunburst</small>
               </div>
             </button>
             <button class="trick-opt" id="trick-stairs">
@@ -167,7 +163,7 @@
               </div>
               <div class="trick-info">
                 <strong>Ascent Ledges</strong>
-                <small>Stepping platforms</small>
+                <small>Stepping combat platforms</small>
               </div>
             </button>
             <button class="trick-opt" id="trick-flag">
@@ -175,68 +171,68 @@
                 <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>
               </div>
               <div class="trick-info">
-                <strong>Summit Flag</strong>
-                <small>Victory milestone marker</small>
+                <strong>Crown Battle Flag</strong>
+                <small>Victory milestone banner</small>
               </div>
             </button>
           </div>
         </div>
       </nav>
 
-      <!-- Right: Functional Controls -->
-      <div class="top-right">
+      <!-- Right: Action Controls (Undo, Redo, Zoom, Layers, Clear, SAVE, Settings) -->
+      <div class="toolbar-action-group">
         <!-- Undo / Redo -->
-        <div class="action-group">
+        <div class="action-btn-pair">
           <button class="action-btn has-tooltip" id="btn-undo" title="Undo" data-tooltip="Undo · Ctrl + Z" disabled>
-            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <path d="M3 7v6h6"/><path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"/>
             </svg>
           </button>
           <button class="action-btn has-tooltip" id="btn-redo" title="Redo" data-tooltip="Redo · Ctrl + Y" disabled>
-            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <path d="M21 7v6h-6"/><path d="M3 17a9 9 0 0 1 9-9 9 9 0 0 1 6 2.3l3 2.7"/>
             </svg>
           </button>
         </div>
 
-        <!-- Zoom Control -->
-        <div class="zoom-pill">
+        <!-- Zoom Control Widget -->
+        <div class="zoom-widget">
           <button class="zoom-btn" id="btn-zoom-out" title="Zoom Out">−</button>
-          <span class="zoom-text" id="zoom-value">100%</span>
+          <span class="zoom-text" id="zoom-value">77%</span>
           <button class="zoom-btn" id="btn-zoom-in" title="Zoom In">+</button>
         </div>
 
-        <!-- Layers Toggle -->
+        <!-- Layers Quick Toggle -->
         <button class="action-btn has-tooltip" id="btn-layers-toggle" aria-label="Layers" data-tooltip="Layers">
-          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <polygon points="12 2 2 7 12 12 22 7 12 2"/>
             <polyline points="2 17 12 22 22 17"/>
             <polyline points="2 12 12 17 22 12"/>
           </svg>
         </button>
 
-        <!-- Clear Canvas -->
+        <!-- Delete / Trash Canvas -->
         <button class="action-btn has-tooltip" id="btn-clear-canvas" aria-label="Clear Canvas" data-tooltip="Clear Canvas">
-          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <polyline points="3 6 5 6 21 6"/>
             <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
           </svg>
         </button>
 
-        <!-- Save Button -->
-        <button class="primary-save-btn has-tooltip" id="btn-save-png" aria-label="Save PNG" data-tooltip="Save PNG · Ctrl + S">
-          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <!-- Big Hero SAVE Button with Download Icon -->
+        <button class="hero-save-btn has-tooltip" id="btn-save-png" aria-label="Save PNG" data-tooltip="Save PNG · Ctrl + S">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
             <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
             <polyline points="7 10 12 15 17 10"/>
             <line x1="12" y1="15" x2="12" y2="3"/>
           </svg>
-          <span>Save</span>
+          <span>SAVE</span>
         </button>
 
-        <!-- Settings Popover -->
+        <!-- Settings Cog -->
         <div class="popover-wrapper" id="settings-popover-wrapper">
           <button class="action-btn has-tooltip" id="btn-settings" aria-label="Settings" data-tooltip="Settings">
-            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
               <circle cx="12" cy="12" r="3"/>
               <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
             </svg>
@@ -255,109 +251,308 @@
               <span>Line Stabilizer</span>
               <input type="checkbox" id="chk-stabilizer" checked>
             </label>
-            <label class="setting-item has-tooltip" data-tooltip="When enabled, the eraser removes artwork from every visible drawing layer.">
-              <span>Erase Across Layers</span>
-              <input type="checkbox" id="chk-erase-all-layers">
-            </label>
-            <div class="setting-divider"></div>
             <div class="setting-slider-row">
               <label>Stickman Size</label>
-              <input type="range" id="slider-stickman-scale" min="0.6" max="1.4" step="0.05" value="1.0">
-            </div>
-            <div class="setting-divider"></div>
-            <div class="setting-hint">
-              <span>P Pencil • B Brush • E Eraser • G Fill</span>
+              <input type="range" id="slider-stickman-scale" min="0.6" max="1.6" step="0.05" value="1.0">
             </div>
           </div>
         </div>
       </div>
     </header>
 
-    <!-- Main Drawing Workspace: The Canvas Dominates -->
-    <main class="drawing-workspace" id="drawing-workspace">
-      <!-- Centered Canvas Paper -->
-      <div class="paper-container" id="paper-container">
-        <div class="paper-sheet" id="paper-sheet">
-          <!-- Canvas Layer Stack -->
-          <div class="layers-container" id="layers-container"></div>
-          <!-- Transient Drawing Preview Canvas -->
-          <canvas id="preview-canvas" class="canvas-layer preview-layer"></canvas>
-        </div>
-      </div>
+    <!-- MAIN WORKSPACE: Grid Layout with Left Panels, Centered Hero Canvas, Right Panels -->
+    <main class="warrior-workspace" id="drawing-workspace">
+      <!-- LEFT COLUMN: Combat Artist Loadout Panels -->
+      <aside class="workspace-sidebar left-sidebar" id="left-sidebar">
+        <!-- 1. COLORS Panel with Hue Wheel & Swatches -->
+        <section class="warrior-panel color-panel" id="panel-colors">
+          <div class="panel-header">
+            <span class="panel-title">COLORS</span>
+          </div>
+          <div class="panel-body color-panel-body">
+            <!-- Circular HSV Color Wheel with SV Picker Box -->
+            <div class="color-wheel-wrapper">
+              <canvas id="color-wheel-canvas" width="130" height="130" class="color-wheel-canvas"></canvas>
+              <div class="color-wheel-handle" id="color-wheel-handle"></div>
+              <div class="color-box-handle" id="color-box-handle"></div>
+            </div>
 
-      <!-- Animated Stickman Living Actor -->
-      <div id="stickman-actor" class="stickman-actor">
-        <div class="stickman-body" id="stickman-body">
-          <img id="stickman-sprite" src="assets/stickman_hover.png" alt="Stickman Cursor">
-        </div>
-        <!-- Subtle 3px crosshair precision dot -->
-        <div class="cursor-crosshair" id="cursor-crosshair"></div>
-      </div>
-    </main>
+            <!-- Two Rows of Round Swatches (7 swatches per row matching Reference) -->
+            <div class="swatch-matrix" id="color-swatches">
+              <div class="swatch-row">
+                <button class="swatch-dot active" data-color="#000000" style="background:#000000;" title="Black"></button>
+                <button class="swatch-dot" data-color="#1e293b" style="background:#1e293b;" title="Dark Slate"></button>
+                <button class="swatch-dot" data-color="#475569" style="background:#475569;" title="Slate"></button>
+                <button class="swatch-dot" data-color="#94a3b8" style="background:#94a3b8;" title="Silver"></button>
+                <button class="swatch-dot" data-color="#ffffff" style="background:#ffffff; border:1px solid #cbd5e1;" title="White"></button>
+                <button class="swatch-dot" data-color="#ef4444" style="background:#ef4444;" title="Crimson"></button>
+                <button class="swatch-dot" data-color="#f97316" style="background:#f97316;" title="Orange"></button>
+              </div>
+              <div class="swatch-row">
+                <button class="swatch-dot" data-color="#f59e0b" style="background:#f59e0b;" title="Gold"></button>
+                <button class="swatch-dot" data-color="#84cc16" style="background:#84cc16;" title="Lime"></button>
+                <button class="swatch-dot" data-color="#10b981" style="background:#10b981;" title="Jade Green"></button>
+                <button class="swatch-dot" data-color="#06b6d4" style="background:#06b6d4;" title="Cyan Glow"></button>
+                <button class="swatch-dot" data-color="#2563eb" style="background:#2563eb;" title="Electric Blue"></button>
+                <button class="swatch-dot" data-color="#8b5cf6" style="background:#8b5cf6;" title="Mystic Purple"></button>
+                <button class="swatch-dot" data-color="#ec4899" style="background:#ec4899;" title="Neon Pink"></button>
+              </div>
+            </div>
+            <input type="color" id="native-color-picker" value="#2563eb" style="display:none">
+          </div>
+        </section>
 
-    <!-- Bottom Floating Dock: Clean Colors & Brush Size -->
-    <footer class="bottom-dock">
-      <!-- 1. Brush Size Selector (Distinct Optical Dots) -->
-      <div class="size-dock">
-        <span class="dock-label">Size</span>
-        <div class="size-pills">
-          <button class="size-pill has-tooltip" data-size="2" data-tooltip="Fine · 2px"><span class="dot size-dot-1"></span></button>
-          <button class="size-pill active has-tooltip" data-size="4" data-tooltip="Standard · 4px"><span class="dot size-dot-2"></span></button>
-          <button class="size-pill has-tooltip" data-size="8" data-tooltip="Medium · 8px"><span class="dot size-dot-3"></span></button>
-          <button class="size-pill has-tooltip" data-size="16" data-tooltip="Bold · 16px"><span class="dot size-dot-4"></span></button>
-          <button class="size-pill has-tooltip" data-size="28" data-tooltip="Heavy · 28px"><span class="dot size-dot-5"></span></button>
-        </div>
-      </div>
+        <!-- 2. BRUSH SIZE Panel -->
+        <section class="warrior-panel brush-size-panel" id="panel-brush-size">
+          <div class="panel-header">
+            <span class="panel-title">BRUSH SIZE</span>
+          </div>
+          <div class="panel-body brush-size-body">
+            <div class="slider-row">
+              <input type="range" class="warrior-slider" id="brush-size-slider" min="1" max="48" value="16">
+              <span class="size-readout" id="brush-size-val">16px</span>
+            </div>
+            <!-- Dynamic Stroke Curve Preview + Quick Preset Dots -->
+            <div class="stroke-preview-row">
+              <svg class="stroke-preview-svg" viewBox="0 0 110 24" preserveAspectRatio="none">
+                <path id="stroke-preview-path" d="M4 12 Q 55 4, 106 12" fill="none" stroke="#ffffff" stroke-width="4" stroke-linecap="round"/>
+              </svg>
+              <div class="size-preset-dots">
+                <button class="preset-dot dot-sm" data-size="4" title="Fine (4px)"></button>
+                <button class="preset-dot dot-md active" data-size="16" title="Medium (16px)"></button>
+                <button class="preset-dot dot-lg" data-size="28" title="Bold (28px)"></button>
+              </div>
+            </div>
+          </div>
+        </section>
 
-      <div class="dock-divider"></div>
+        <!-- 3. BRUSH STYLE Panel -->
+        <section class="warrior-panel brush-style-panel" id="panel-brush-style">
+          <div class="panel-header">
+            <span class="panel-title">BRUSH STYLE</span>
+          </div>
+          <div class="panel-body brush-style-body">
+            <div class="brush-slots-grid">
+              <button class="brush-slot active" data-brush="pencil" title="Pencil">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg>
+              </button>
+              <button class="brush-slot" data-brush="ink" title="Ink Pen">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="m12 19 7-7 3 3-7 7-3-3z"/><path d="m18 13-1.5-7.5L2 2l3.5 14.5L13 18"/><path d="m2 2 7.586 7.586"/><circle cx="11" cy="11" r="2"/></svg>
+              </button>
+              <button class="brush-slot" data-brush="marker" title="Marker">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="m14 2 8 8L10 22H2v-8L14 2z"/><path d="m9 7 8 8"/></svg>
+              </button>
+              <button class="brush-slot" data-brush="watercolor" title="Watercolor">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/></svg>
+              </button>
+              <button class="brush-slot" data-brush="airbrush" title="Airbrush">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="1.5"/><circle cx="8" cy="10" r="1.5"/><circle cx="16" cy="10" r="1.5"/><circle cx="10" cy="15" r="1.5"/><circle cx="14" cy="15" r="1.5"/><circle cx="12" cy="6" r="1.5"/></svg>
+              </button>
+            </div>
+          </div>
+        </section>
+      </aside>
 
-      <!-- 2. Clean 10-Color Palette Swatches -->
-      <div class="color-dock">
-        <div class="current-color-preview" id="current-color-preview" title="Current Color" style="background-color: #000000;"></div>
-        <div class="color-swatches" id="color-swatches">
-          <button class="swatch-btn active has-tooltip" data-color="#000000" style="background:#000000;" data-tooltip="Black"></button>
-          <button class="swatch-btn has-tooltip" data-color="#ffffff" style="background:#ffffff; border:1px solid #cbd5e1;" data-tooltip="White"></button>
-          <button class="swatch-btn has-tooltip" data-color="#64748b" style="background:#64748b;" data-tooltip="Slate"></button>
-          <button class="swatch-btn has-tooltip" data-color="#ef4444" style="background:#ef4444;" data-tooltip="Red"></button>
-          <button class="swatch-btn has-tooltip" data-color="#f97316" style="background:#f97316;" data-tooltip="Orange"></button>
-          <button class="swatch-btn has-tooltip" data-color="#f59e0b" style="background:#f59e0b;" data-tooltip="Gold"></button>
-          <button class="swatch-btn has-tooltip" data-color="#10b981" style="background:#10b981;" data-tooltip="Green"></button>
-          <button class="swatch-btn has-tooltip" data-color="#06b6d4" style="background:#06b6d4;" data-tooltip="Cyan"></button>
-          <button class="swatch-btn has-tooltip" data-color="#2563eb" style="background:#2563eb;" data-tooltip="Electric Blue"></button>
-          <button class="swatch-btn has-tooltip" data-color="#8b5cf6" style="background:#8b5cf6;" data-tooltip="Purple"></button>
-          <button class="swatch-btn has-tooltip" data-color="#ec4899" style="background:#ec4899;" data-tooltip="Pink"></button>
+      <!-- CENTER: HERO DRAWING CANVAS WITH SUMI-E INK FRAMING & BOTTOM GRAFFITI -->
+      <section class="canvas-stage" id="canvas-stage">
+        <div class="canvas-ink-wrapper" id="canvas-ink-wrapper">
+          <!-- Sumi-e Japanese Comic Ink Splatters Around Canvas Frame -->
+          <svg class="sumie-ink-frame-svg" viewBox="0 0 1000 562.5" preserveAspectRatio="none" aria-hidden="true">
+            <defs>
+              <!-- Top, bottom, left, right ink splatter brushes -->
+              <filter id="ink-roughen">
+                <feTurbulence type="fractalNoise" baseFrequency="0.04" numOctaves="3" result="noise" />
+                <feDisplacementMap in="SourceGraphic" in2="noise" scale="6" xChannelSelector="R" yChannelSelector="G" />
+              </filter>
+            </defs>
+            <!-- Heavy sumi-e ink borders and outer splatter splashes -->
+            <path d="M-8,-8 L1008,-8 L1008,570.5 L-8,570.5 Z M8,8 L8,554.5 L992,554.5 L992,8 Z" fill="#000000" filter="url(#ink-roughen)"/>
+            <!-- Top ink drips & splashes -->
+            <circle cx="120" cy="-6" r="8" fill="#000000"/>
+            <circle cx="128" cy="-14" r="4.5" fill="#000000"/>
+            <circle cx="340" cy="-7" r="9" fill="#000000"/>
+            <circle cx="348" cy="-15" r="5" fill="#000000"/>
+            <circle cx="680" cy="-8" r="11" fill="#000000"/>
+            <circle cx="692" cy="-18" r="4" fill="#000000"/>
+            <circle cx="850" cy="-6" r="7" fill="#000000"/>
+            <!-- Bottom ink drips & splashes -->
+            <circle cx="80" cy="570" r="10" fill="#000000"/>
+            <circle cx="92" cy="580" r="5" fill="#000000"/>
+            <circle cx="280" cy="569" r="8" fill="#000000"/>
+            <circle cx="480" cy="572" r="12" fill="#000000"/>
+            <circle cx="494" cy="582" r="6" fill="#000000"/>
+            <circle cx="780" cy="570" r="9" fill="#000000"/>
+            <circle cx="920" cy="571" r="11" fill="#000000"/>
+            <!-- Left edge splashes -->
+            <circle cx="-6" cy="180" r="9" fill="#000000"/>
+            <circle cx="-14" cy="190" r="5" fill="#000000"/>
+            <circle cx="-8" cy="380" r="11" fill="#000000"/>
+            <!-- Right edge splashes -->
+            <circle cx="1006" cy="140" r="8" fill="#000000"/>
+            <circle cx="1008" cy="320" r="10" fill="#000000"/>
+            <circle cx="1016" cy="330" r="5" fill="#000000"/>
+          </svg>
           
-          <input type="color" id="native-color-picker" value="#2563eb" style="display:none">
-          <button class="swatch-add-btn has-tooltip" id="btn-custom-color" data-tooltip="Custom Color">+</button>
-        </div>
-      </div>
-    </footer>
+          <!-- Centered Canvas Paper -->
+          <div class="paper-container" id="paper-container">
+            <div class="paper-sheet" id="paper-sheet">
+              <!-- Canvas Layer Stack -->
+              <div class="layers-container" id="layers-container"></div>
+              <!-- Transient Drawing Preview Canvas -->
+              <canvas id="preview-canvas" class="canvas-layer preview-layer"></canvas>
+            </div>
+          </div>
 
-    <!-- Collapsible Right Layers Drawer (Narrow & Closed by Default) -->
-    <aside class="layers-drawer" id="layers-drawer">
-      <div class="drawer-header">
-        <span class="drawer-title">Layers</span>
-        <div class="drawer-actions">
-          <button class="drawer-icon-btn has-tooltip" id="btn-add-layer" data-tooltip="Add Layer" aria-label="Add Layer">
-            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-          </button>
-          <button class="drawer-icon-btn has-tooltip" id="btn-delete-layer" data-tooltip="Delete Layer" aria-label="Delete Layer">
-            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
-          </button>
-          <button class="drawer-icon-btn" id="btn-close-drawer" aria-label="Close Drawer">
-            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-          </button>
+          <!-- Animated Stickman Living Actor -->
+          <div id="stickman-actor" class="stickman-actor">
+            <div class="stickman-body" id="stickman-body">
+              <img id="stickman-sprite" src="assets/stickman_hover.png" alt="Stickman Cursor">
+            </div>
+            <!-- Crosshair precision dot -->
+            <div class="cursor-crosshair" id="cursor-crosshair"></div>
+          </div>
         </div>
-      </div>
-      <div class="drawer-body">
-        <div class="layer-opacity-control">
-          <label>Opacity</label>
-          <input type="range" id="layer-opacity-slider" min="0" max="100" value="100">
-          <span id="layer-opacity-val">100%</span>
+
+        <!-- Bottom Battle Graffiti Ribbon ("A SMALL ARTIST IN A BIG WORLD") -->
+        <div class="bottom-battle-ribbon" aria-hidden="true">
+          <!-- Left graffiti block -->
+          <div class="battle-graffiti-block">
+            <div class="graffiti-text">
+              <span>A SMALL</span>
+              <span class="artist-word">ARTIST</span>
+              <span>A BIG WORLD</span>
+            </div>
+            <div class="graffiti-crown">
+              <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="#ffffff" stroke-width="2">
+                <path d="M2 18h20L19 6l-5 5-2-7-2 7-5-5-3 12z"/>
+              </svg>
+            </div>
+          </div>
+
+          <!-- Stickman warriors in battle charge under the canvas -->
+          <div class="battle-warriors-row">
+            <!-- Warrior 1: Dashing with blue pen aura -->
+            <div class="mini-warrior warrior-dash-blue">
+              <svg viewBox="0 0 60 40" width="54" height="36" fill="none" stroke="#000000" stroke-width="2.4" stroke-linecap="round">
+                <!-- Aura -->
+                <path d="M5 25 Q 15 15, 25 20" stroke="#38bdf8" stroke-width="4" opacity="0.8"/>
+                <!-- Stickman -->
+                <circle cx="34" cy="12" r="6" fill="#000000"/>
+                <path d="M34 18 L26 28 M26 28 L16 35 M26 28 L35 36"/>
+                <path d="M30 22 L45 16 M18 20 L30 22"/>
+                <!-- Pen weapon -->
+                <path d="M12 18 L48 15" stroke="#38bdf8" stroke-width="2.5"/>
+              </svg>
+            </div>
+
+            <!-- Warrior 2: Combat pose with oversized tactical brush -->
+            <div class="mini-warrior warrior-combat-pose">
+              <svg viewBox="0 0 60 40" width="54" height="36" fill="none" stroke="#000000" stroke-width="2.4" stroke-linecap="round">
+                <circle cx="32" cy="10" r="6" fill="#000000"/>
+                <path d="M32 16 L32 26 M32 26 L22 36 M32 26 L42 36"/>
+                <path d="M20 20 L32 20 M32 20 L48 18"/>
+                <!-- Pen sword -->
+                <path d="M10 28 L50 12" stroke="#38bdf8" stroke-width="2.5"/>
+              </svg>
+            </div>
+
+            <!-- Warrior 3: Blue circular energy spin -->
+            <div class="mini-warrior warrior-energy-spin">
+              <svg viewBox="0 0 60 40" width="54" height="36" fill="none" stroke="#000000" stroke-width="2.4" stroke-linecap="round">
+                <!-- Energy ring -->
+                <ellipse cx="30" cy="20" rx="18" ry="12" stroke="#38bdf8" stroke-width="2.5" stroke-dasharray="4 2"/>
+                <circle cx="30" cy="14" r="5" fill="#000000"/>
+                <path d="M30 19 L30 28 M30 28 L24 36 M30 28 L36 36"/>
+                <path d="M18 24 L42 16" stroke="#000000" stroke-width="2.5"/>
+              </svg>
+            </div>
+
+            <!-- Warrior 4: Blood moon mini silhouette -->
+            <div class="mini-warrior blood-moon-duel">
+              <svg viewBox="0 0 50 40" width="45" height="36" fill="none">
+                <circle cx="28" cy="18" r="14" fill="#ef4444" opacity="0.85"/>
+                <circle cx="24" cy="16" r="4" fill="#000000"/>
+                <path d="M24 20 L24 28 M24 28 L18 35 M24 28 L30 35" stroke="#000000" stroke-width="2"/>
+                <path d="M16 22 L32 18" stroke="#000000" stroke-width="2"/>
+              </svg>
+            </div>
+
+            <!-- Torii Gate Silhouette -->
+            <div class="mini-torii-gate">
+              <svg viewBox="0 0 40 40" width="36" height="36" fill="#000000">
+                <path d="M2 8 C 12 5, 28 5, 38 8 L38 12 L34 12 L34 38 L28 38 L28 14 L12 14 L12 38 L6 38 L6 12 L2 12 Z"/>
+                <rect x="4" y="16" width="32" height="3"/>
+              </svg>
+            </div>
+          </div>
         </div>
-        <div class="layers-list" id="layers-list"></div>
-      </div>
-    </aside>
+      </section>
+
+      <!-- RIGHT COLUMN: Layers & Settings Panels -->
+      <aside class="workspace-sidebar right-sidebar" id="right-sidebar">
+        <!-- 1. LAYERS Panel -->
+        <section class="warrior-panel layers-panel" id="panel-layers">
+          <div class="panel-header layers-panel-header">
+            <span class="panel-title blue-title">LAYERS</span>
+            <button class="add-layer-btn" id="btn-add-layer" title="Add Layer">+</button>
+          </div>
+          <div class="panel-body layers-panel-body">
+            <div class="layer-opacity-control" style="display:none">
+              <input type="range" id="layer-opacity-slider" min="0" max="100" value="100">
+              <span id="layer-opacity-val">100%</span>
+            </div>
+            <div class="warrior-layers-list" id="layers-list">
+              <!-- Dynamically populated layers -->
+            </div>
+          </div>
+        </section>
+
+        <!-- 2. SETTINGS Panel -->
+        <section class="warrior-panel settings-panel" id="panel-settings">
+          <div class="panel-header settings-panel-header">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#38bdf8" stroke-width="2">
+              <circle cx="12" cy="12" r="3"/>
+              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+            </svg>
+            <span class="panel-title blue-title">SETTINGS</span>
+          </div>
+          <div class="panel-body settings-panel-body">
+            <div class="warrior-setting-group">
+              <label class="warrior-check-label">
+                <input type="checkbox" id="chk-erase-all-layers" class="warrior-checkbox">
+                <span class="checkbox-box"></span>
+                <span class="check-title">Erase Across Layers</span>
+              </label>
+              <p class="setting-desc">When enabled, the eraser removes artwork from every visible drawing layer.</p>
+            </div>
+
+            <div class="warrior-setting-group">
+              <label class="warrior-check-label">
+                <input type="checkbox" id="chk-cursor-indicator" class="warrior-checkbox" checked>
+                <span class="checkbox-box"></span>
+                <span class="check-title">Show Cursor Indicator</span>
+              </label>
+            </div>
+
+            <div class="warrior-setting-group">
+              <label class="warrior-check-label">
+                <input type="checkbox" id="chk-smooth-drawing" class="warrior-checkbox" checked>
+                <span class="checkbox-box"></span>
+                <span class="check-title">Smooth Drawing</span>
+              </label>
+            </div>
+
+            <div class="warrior-setting-group">
+              <label class="warrior-check-label">
+                <input type="checkbox" id="chk-pressure" class="warrior-checkbox">
+                <span class="checkbox-box"></span>
+                <span class="check-title">Pressure Sensitivity</span>
+              </label>
+            </div>
+          </div>
+        </section>
+      </aside>
+    </main>
 
     <!-- Subtle Toast Notification (e.g. "Saved PNG") -->
     <div id="toast" class="toast hidden">

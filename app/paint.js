@@ -87,6 +87,8 @@ class StickmanPaintApp {
   initDOM() {
     this.app = document.getElementById('app');
     this.workspace = document.getElementById('drawing-workspace');
+    this.canvasStage = document.getElementById('canvas-stage');
+    this.canvasInkWrapper = document.getElementById('canvas-ink-wrapper');
     this.paperContainer = document.getElementById('paper-container');
     this.paperSheet = document.getElementById('paper-sheet');
     this.layersContainer = document.getElementById('layers-container');
@@ -107,19 +109,16 @@ class StickmanPaintApp {
       });
     }
 
-    // Layers Drawer
-    this.layersDrawer = document.getElementById('layers-drawer');
+    // Panels & Controls
     this.layersList = document.getElementById('layers-list');
-    this.layerOpacitySlider = document.getElementById('layer-opacity-slider');
-    this.layerOpacityVal = document.getElementById('layer-opacity-val');
-
-    // Bottom Dock Swatches
-    this.currentColorPreview = document.getElementById('current-color-preview');
+    this.brushSizeSlider = document.getElementById('brush-size-slider');
+    this.brushSizeVal = document.getElementById('brush-size-val');
+    this.strokePreviewPath = document.getElementById('stroke-preview-path');
+    this.colorWheelCanvas = document.getElementById('color-wheel-canvas');
     this.nativeColorPicker = document.getElementById('native-color-picker');
     this.zoomValue = document.getElementById('zoom-value');
 
     // Popovers
-    this.brushPopover = document.getElementById('brush-popover-wrapper');
     this.shapesPopover = document.getElementById('shape-popover-wrapper');
     this.tricksPopover = document.getElementById('tricks-popover-wrapper');
     this.settingsPopover = document.getElementById('settings-popover-wrapper');
@@ -127,6 +126,8 @@ class StickmanPaintApp {
     // Toast
     this.toast = document.getElementById('toast');
     this.toastMsg = document.getElementById('toast-msg');
+
+    this.initColorWheel();
   }
 
   /* ==========================================================================
@@ -145,8 +146,10 @@ class StickmanPaintApp {
     bg.ctx.fillStyle = '#ffffff';
     bg.ctx.fillRect(0, 0, this.canvasWidth, this.canvasHeight);
 
-    // 2. Active Drawing Layer
-    this.addLayer('Artwork', false);
+    // 2. Initial Drawing Layers matching Reference (Layer 1, Layer 2, Layer 3)
+    this.addLayer('Layer 1', false);
+    this.addLayer('Layer 2', false);
+    this.addLayer('Layer 3', false);
     this.renderLayersUI();
   }
 
@@ -181,22 +184,31 @@ class StickmanPaintApp {
   }
 
   renderLayersUI() {
+    if (!this.layersList) return;
     this.layersList.innerHTML = '';
     for (let i = this.layers.length - 1; i >= 0; i--) {
       const layer = this.layers[i];
       const item = document.createElement('div');
-      item.className = `layer-item ${i === this.activeLayerIndex ? 'active' : ''}`;
-      const eyeSvg = layer.visible
-        ? `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>`
-        : `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>`;
+      item.className = `warrior-layer-row ${i === this.activeLayerIndex ? 'active' : ''}`;
       
+      const eyeSvg = layer.visible
+        ? `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>`
+        : `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>`;
+      
+      const thumbClass = layer.isBackground ? 'layer-thumb-box' : 'layer-thumb-box checker';
+      const rightAction = layer.isBackground
+        ? `<span class="layer-row-action" title="Locked"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></span>`
+        : `<span class="layer-row-action" title="Options"><svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/></svg></span>`;
+
       item.innerHTML = `
-        <span class="layer-name">${layer.name}</span>
-        <button class="layer-vis-btn" title="Toggle visibility" aria-label="Toggle visibility">${eyeSvg}</button>
+        <button class="layer-eye-btn" title="Toggle visibility" aria-label="Toggle visibility">${eyeSvg}</button>
+        <div class="${thumbClass}"></div>
+        <span class="layer-row-title">${layer.name}</span>
+        ${rightAction}
       `;
 
       item.addEventListener('click', (e) => {
-        const visBtn = e.target.closest('.layer-vis-btn');
+        const visBtn = e.target.closest('.layer-eye-btn');
         if (visBtn) {
           layer.visible = !layer.visible;
           layer.canvas.style.display = layer.visible ? 'block' : 'none';
@@ -204,8 +216,6 @@ class StickmanPaintApp {
           return;
         }
         this.activeLayerIndex = i;
-        this.layerOpacitySlider.value = Math.round(layer.opacity * 100);
-        this.layerOpacityVal.textContent = `${this.layerOpacitySlider.value}%`;
         this.renderLayersUI();
       });
 
@@ -216,11 +226,154 @@ class StickmanPaintApp {
   deleteActiveLayer() {
     if (this.layers.length <= 1) return;
     const layer = this.layers[this.activeLayerIndex];
+    if (layer.isBackground) return; // Background locked
     layer.canvas.remove();
     this.layers.splice(this.activeLayerIndex, 1);
     this.activeLayerIndex = Math.max(0, this.activeLayerIndex - 1);
     this.renderLayersUI();
     this.saveHistory('Delete Layer');
+  }
+
+  /* ==========================================================================
+     HSV Color Wheel Engine
+     ========================================================================== */
+  initColorWheel() {
+    if (!this.colorWheelCanvas) return;
+    const canvas = this.colorWheelCanvas;
+    const ctx = canvas.getContext('2d');
+    const width = canvas.width;
+    const height = canvas.height;
+    const cx = width / 2;
+    const cy = height / 2;
+    const outerR = cx - 2;
+    const innerR = outerR - 14;
+
+    this.currentHue = 200; // Warrior cyan-blue initial hue
+    this.currentSat = 1.0;
+    this.currentVal = 1.0;
+
+    const drawWheel = () => {
+      ctx.clearRect(0, 0, width, height);
+
+      // 1. Outer Rainbow Hue Ring
+      for (let angle = 0; angle < 360; angle += 1) {
+        const startRad = (angle - 1.5) * Math.PI / 180;
+        const endRad = (angle + 1.5) * Math.PI / 180;
+        ctx.beginPath();
+        ctx.arc(cx, cy, outerR, startRad, endRad);
+        ctx.arc(cx, cy, innerR, endRad, startRad, true);
+        ctx.fillStyle = `hsl(${angle}, 100%, 50%)`;
+        ctx.fill();
+      }
+
+      // Outer ring border
+      ctx.beginPath();
+      ctx.arc(cx, cy, outerR, 0, Math.PI * 2);
+      ctx.strokeStyle = 'rgba(255,255,255,0.15)';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.arc(cx, cy, innerR, 0, Math.PI * 2);
+      ctx.strokeStyle = 'rgba(255,255,255,0.15)';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+
+      // 2. Inner Saturation-Value box (50x50)
+      const boxSize = 50;
+      const bx = cx - boxSize / 2;
+      const by = cy - boxSize / 2;
+
+      // Base pure hue fill
+      ctx.fillStyle = `hsl(${this.currentHue}, 100%, 50%)`;
+      ctx.fillRect(bx, by, boxSize, boxSize);
+
+      // White horizontal gradient (saturation)
+      const gradWhite = ctx.createLinearGradient(bx, by, bx + boxSize, by);
+      gradWhite.addColorStop(0, 'rgba(255,255,255,1)');
+      gradWhite.addColorStop(1, 'rgba(255,255,255,0)');
+      ctx.fillStyle = gradWhite;
+      ctx.fillRect(bx, by, boxSize, boxSize);
+
+      // Black vertical gradient (brightness/value)
+      const gradBlack = ctx.createLinearGradient(bx, by, bx, by + boxSize);
+      gradBlack.addColorStop(0, 'rgba(0,0,0,0)');
+      gradBlack.addColorStop(1, 'rgba(0,0,0,1)');
+      ctx.fillStyle = gradBlack;
+      ctx.fillRect(bx, by, boxSize, boxSize);
+
+      // SV box subtle border
+      ctx.strokeStyle = 'rgba(255,255,255,0.25)';
+      ctx.lineWidth = 1;
+      ctx.strokeRect(bx, by, boxSize, boxSize);
+    };
+
+    drawWheel();
+    this.drawColorWheel = drawWheel;
+
+    const pickColor = (e) => {
+      const rect = canvas.getBoundingClientRect();
+      const x = (e.clientX - rect.left) * (width / rect.width);
+      const y = (e.clientY - rect.top) * (height / rect.height);
+      const dx = x - cx;
+      const dy = y - cy;
+      const dist = Math.hypot(dx, dy);
+
+      const boxSize = 50;
+      const bx = cx - boxSize / 2;
+      const by = cy - boxSize / 2;
+
+      if (dist >= innerR - 2 && dist <= outerR + 4) {
+        // Hue ring selected
+        let angle = Math.atan2(dy, dx) * 180 / Math.PI;
+        if (angle < 0) angle += 360;
+        this.currentHue = Math.round(angle);
+        drawWheel();
+        this.updateColorFromHSV();
+      } else if (x >= bx && x <= bx + boxSize && y >= by && y <= by + boxSize) {
+        // Inside SV box
+        this.currentSat = Math.max(0, Math.min(1, (x - bx) / boxSize));
+        this.currentVal = Math.max(0, Math.min(1, 1 - (y - by) / boxSize));
+        this.updateColorFromHSV();
+      }
+    };
+
+    let isPicking = false;
+    canvas.addEventListener('pointerdown', (e) => {
+      isPicking = true;
+      canvas.setPointerCapture(e.pointerId);
+      pickColor(e);
+    });
+    canvas.addEventListener('pointermove', (e) => {
+      if (isPicking) pickColor(e);
+    });
+    const stopPick = () => { isPicking = false; };
+    canvas.addEventListener('pointerup', stopPick);
+    canvas.addEventListener('pointercancel', stopPick);
+  }
+
+  updateColorFromHSV() {
+    const h = this.currentHue;
+    const s = this.currentSat;
+    const v = this.currentVal;
+
+    const c = v * s;
+    const x = c * (1 - Math.abs(((h / 60) % 2) - 1));
+    const m = v - c;
+    let r = 0, g = 0, b = 0;
+
+    if (h >= 0 && h < 60) { r = c; g = x; b = 0; }
+    else if (h >= 60 && h < 120) { r = x; g = c; b = 0; }
+    else if (h >= 120 && h < 180) { r = 0; g = c; b = x; }
+    else if (h >= 180 && h < 240) { r = 0; g = x; b = c; }
+    else if (h >= 240 && h < 300) { r = x; g = 0; b = c; }
+    else if (h >= 300 && h < 360) { r = c; g = 0; b = x; }
+
+    const rHex = Math.round((r + m) * 255).toString(16).padStart(2, '0');
+    const gHex = Math.round((g + m) * 255).toString(16).padStart(2, '0');
+    const bHex = Math.round((b + m) * 255).toString(16).padStart(2, '0');
+    const hex = `#${rHex}${gHex}${bHex}`;
+    this.setColor(hex);
   }
 
   /* ==========================================================================
@@ -533,44 +686,54 @@ class StickmanPaintApp {
     window.addEventListener('pointercancel', stopDrawing);
 
     // 2. Tool Navigation
-    document.getElementById('tool-pencil').addEventListener('click', () => {
-      this.setActiveTool('pencil');
-    });
+    const bindToolBtn = (id, tool) => {
+      const btn = document.getElementById(id);
+      if (btn) {
+        btn.addEventListener('click', () => this.setActiveTool(tool));
+      }
+    };
+    bindToolBtn('tool-pencil', 'pencil');
+    bindToolBtn('tool-eraser', 'eraser');
+    bindToolBtn('tool-bucket', 'bucket');
+    bindToolBtn('tool-eyedropper', 'eyedropper');
+    bindToolBtn('tool-text', 'text');
+    bindToolBtn('tool-select', 'select');
 
-    document.getElementById('tool-eraser').addEventListener('click', () => {
-      this.setActiveTool('eraser');
-    });
-
-    document.getElementById('tool-bucket').addEventListener('click', () => {
-      this.setActiveTool('bucket');
-    });
-
-    document.getElementById('tool-eyedropper').addEventListener('click', () => {
-      this.setActiveTool('eyedropper');
-    });
-
-    // 3. Brushes Popover
-    document.getElementById('tool-brush').addEventListener('click', (e) => {
-      e.stopPropagation();
-      this.togglePopover(this.brushPopover);
-    });
-
-    document.querySelectorAll('.brush-opt').forEach(btn => {
+    // 3. Brush Styles Slots (Left Column)
+    document.querySelectorAll('.brush-slot').forEach(btn => {
       btn.addEventListener('click', () => {
-        document.querySelectorAll('.brush-opt').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.brush-slot').forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
         this.currentBrush = btn.dataset.brush;
-        this.setActiveTool('brush');
-        this.closePopovers();
-        this.reactStickmanThinking(250);
+        this.setActiveTool('pencil');
+        this.reactStickmanThinking(200);
       });
     });
 
-    // 4. Shapes Popover
-    document.getElementById('tool-shapes-btn').addEventListener('click', (e) => {
-      e.stopPropagation();
-      this.togglePopover(this.shapesPopover);
+    // 4. Brush Size Slider & Quick Presets
+    if (this.brushSizeSlider) {
+      this.brushSizeSlider.addEventListener('input', (e) => {
+        this.setStrokeSize(parseInt(e.target.value));
+      });
+    }
+
+    document.querySelectorAll('.preset-dot').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.preset-dot').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        const sz = parseInt(btn.dataset.size);
+        this.setStrokeSize(sz);
+      });
     });
+
+    // 5. Shapes Popover
+    const shapeBtn = document.getElementById('tool-shapes-btn');
+    if (shapeBtn) {
+      shapeBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this.togglePopover(this.shapesPopover);
+      });
+    }
 
     document.querySelectorAll('.shape-opt').forEach(btn => {
       btn.addEventListener('click', () => {
@@ -582,114 +745,86 @@ class StickmanPaintApp {
       });
     });
 
-    document.getElementById('chk-shape-fill').addEventListener('change', (e) => {
-      this.shapeFill = e.target.checked;
-    });
-
-    // 5. Stickman Playful Tricks
-    document.getElementById('btn-stickman-tricks').addEventListener('click', (e) => {
-      e.stopPropagation();
-      this.togglePopover(this.tricksPopover);
-    });
-
-    document.getElementById('trick-mountain').addEventListener('click', () => {
-      this.closePopovers();
-      this.executeTrickMountain();
-    });
-
-    document.getElementById('trick-sun').addEventListener('click', () => {
-      this.closePopovers();
-      this.executeTrickSun();
-    });
-
-    document.getElementById('trick-stairs').addEventListener('click', () => {
-      this.closePopovers();
-      this.executeTrickStairs();
-    });
-
-    document.getElementById('trick-flag').addEventListener('click', () => {
-      this.closePopovers();
-      this.executeTrickFlag();
-    });
-
-    // 6. Brush Size Pills
-    document.querySelectorAll('.size-pill').forEach(btn => {
-      btn.addEventListener('click', () => {
-        document.querySelectorAll('.size-pill').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-        this.strokeSize = parseInt(btn.dataset.size);
-        this.updateEraserIndicator();
+    const shapeFillChk = document.getElementById('chk-shape-fill');
+    if (shapeFillChk) {
+      shapeFillChk.addEventListener('change', (e) => {
+        this.shapeFill = e.target.checked;
       });
-    });
+    }
+
+    // 6. Warrior Tricks Popover
+    const tricksBtn = document.getElementById('btn-stickman-tricks');
+    if (tricksBtn) {
+      tricksBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this.togglePopover(this.tricksPopover);
+      });
+    }
+
+    const bindTrick = (id, fn) => {
+      const el = document.getElementById(id);
+      if (el) {
+        el.addEventListener('click', () => {
+          this.closePopovers();
+          fn();
+        });
+      }
+    };
+    bindTrick('trick-mountain', () => this.executeTrickMountain());
+    bindTrick('trick-sun', () => this.executeTrickSun());
+    bindTrick('trick-stairs', () => this.executeTrickStairs());
+    bindTrick('trick-flag', () => this.executeTrickFlag());
 
     // 7. Palette Swatches
-    document.querySelectorAll('.swatch-btn').forEach(btn => {
+    document.querySelectorAll('.swatch-dot').forEach(btn => {
       btn.addEventListener('click', () => {
-        document.querySelectorAll('.swatch-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.swatch-dot').forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
         this.setColor(btn.dataset.color);
       });
     });
 
-    document.getElementById('btn-custom-color').addEventListener('click', () => {
-      this.nativeColorPicker.click();
-    });
-    this.nativeColorPicker.addEventListener('input', (e) => {
-      this.setColor(e.target.value);
-    });
+    if (this.nativeColorPicker) {
+      this.nativeColorPicker.addEventListener('input', (e) => {
+        this.setColor(e.target.value);
+      });
+    }
 
-    // 8. Functional Controls
-    document.getElementById('btn-undo').addEventListener('click', () => this.undo());
-    document.getElementById('btn-redo').addEventListener('click', () => this.redo());
+    // 8. Functional Controls (Undo, Redo, Zoom, Layers, Clear, Save, Settings)
+    const undoBtn = document.getElementById('btn-undo');
+    if (undoBtn) undoBtn.addEventListener('click', () => this.undo());
 
-    document.getElementById('btn-zoom-in').addEventListener('click', () => this.setZoom(this.zoom + 0.15));
-    document.getElementById('btn-zoom-out').addEventListener('click', () => this.setZoom(this.zoom - 0.15));
+    const redoBtn = document.getElementById('btn-redo');
+    if (redoBtn) redoBtn.addEventListener('click', () => this.redo());
 
-    document.getElementById('btn-layers-toggle').addEventListener('click', () => {
-      this.layersDrawer.classList.toggle('open');
-    });
-    document.getElementById('btn-close-drawer').addEventListener('click', () => {
-      this.layersDrawer.classList.remove('open');
-    });
-    document.getElementById('btn-add-layer').addEventListener('click', () => {
-      this.addLayer();
-      this.saveHistory('Add Layer');
-    });
-    document.getElementById('btn-delete-layer').addEventListener('click', () => {
-      this.deleteActiveLayer();
-    });
+    const zoomInBtn = document.getElementById('btn-zoom-in');
+    if (zoomInBtn) zoomInBtn.addEventListener('click', () => this.setZoom(this.zoom + 0.1));
 
-    this.layerOpacitySlider.addEventListener('input', (e) => {
-      const val = parseInt(e.target.value) / 100;
-      this.layerOpacityVal.textContent = `${e.target.value}%`;
-      const layer = this.getActiveLayer();
-      if (layer) {
-        layer.opacity = val;
-        layer.canvas.style.opacity = val;
-      }
-    });
+    const zoomOutBtn = document.getElementById('btn-zoom-out');
+    if (zoomOutBtn) zoomOutBtn.addEventListener('click', () => this.setZoom(this.zoom - 0.1));
 
-    document.getElementById('btn-clear-canvas').addEventListener('click', () => this.clearCanvas());
-    document.getElementById('btn-save-png').addEventListener('click', () => this.exportPNG());
+    const addLayerBtn = document.getElementById('btn-add-layer');
+    if (addLayerBtn) {
+      addLayerBtn.addEventListener('click', () => {
+        this.addLayer();
+        this.saveHistory('Add Layer');
+      });
+    }
+
+    const clearCanvasBtn = document.getElementById('btn-clear-canvas');
+    if (clearCanvasBtn) clearCanvasBtn.addEventListener('click', () => this.clearCanvas());
+
+    const savePngBtn = document.getElementById('btn-save-png');
+    if (savePngBtn) savePngBtn.addEventListener('click', () => this.exportPNG());
 
     // Settings
-    document.getElementById('btn-settings').addEventListener('click', (e) => {
-      e.stopPropagation();
-      this.togglePopover(this.settingsPopover);
-    });
-
-    document.getElementById('chk-dark-mode').addEventListener('change', (e) => {
-      document.body.classList.toggle('theme-light', !e.target.checked);
-      document.body.classList.toggle('theme-dark', e.target.checked);
-    });
-
-    document.getElementById('chk-sound-effects').addEventListener('change', (e) => {
-      this.soundEnabled = e.target.checked;
-    });
-
-    document.getElementById('chk-stabilizer').addEventListener('change', (e) => {
-      this.stabilizer = e.target.checked;
-    });
+    const settingsBtn = document.getElementById('btn-settings');
+    if (settingsBtn) {
+      settingsBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this.togglePopover(this.settingsPopover);
+      });
+    }
 
     const eraseAllLayersChk = document.getElementById('chk-erase-all-layers');
     if (eraseAllLayersChk) {
@@ -698,10 +833,29 @@ class StickmanPaintApp {
       });
     }
 
-    document.getElementById('slider-stickman-scale').addEventListener('input', (e) => {
-      this.stickmanScale = parseFloat(e.target.value);
-      if (this.stickman) this.stickman.scale = this.stickmanScale;
-    });
+    const cursorIndChk = document.getElementById('chk-cursor-indicator');
+    if (cursorIndChk) {
+      cursorIndChk.addEventListener('change', (e) => {
+        if (this.cursorCrosshair) {
+          this.cursorCrosshair.style.display = e.target.checked ? 'block' : 'none';
+        }
+      });
+    }
+
+    const smoothDrawChk = document.getElementById('chk-smooth-drawing');
+    if (smoothDrawChk) {
+      smoothDrawChk.addEventListener('change', (e) => {
+        this.stabilizer = e.target.checked;
+      });
+    }
+
+    const stickmanScaleSlider = document.getElementById('slider-stickman-scale');
+    if (stickmanScaleSlider) {
+      stickmanScaleSlider.addEventListener('input', (e) => {
+        this.stickmanScale = parseFloat(e.target.value);
+        if (this.stickman) this.stickman.scale = this.stickmanScale;
+      });
+    }
 
     // Close popovers on click outside
     window.addEventListener('click', (e) => {
@@ -734,19 +888,66 @@ class StickmanPaintApp {
 
       const key = e.key.toLowerCase();
       if (key === 'p') this.setActiveTool('pencil');
-      else if (key === 'b') this.setActiveTool('brush');
+      else if (key === 'b') this.setActiveTool('pencil');
       else if (key === 'e') this.setActiveTool('eraser');
       else if (key === 'g') this.setActiveTool('bucket');
       else if (key === 'i') this.setActiveTool('eyedropper');
     });
   }
 
+  setStrokeSize(size) {
+    this.strokeSize = Math.max(1, Math.min(64, size));
+    if (this.brushSizeSlider) this.brushSizeSlider.value = this.strokeSize;
+    if (this.brushSizeVal) this.brushSizeVal.textContent = `${this.strokeSize}px`;
+    if (this.strokePreviewPath) {
+      const previewW = Math.min(18, Math.max(2, this.strokeSize));
+      this.strokePreviewPath.setAttribute('stroke-width', previewW);
+    }
+    this.updateEraserIndicator();
+  }
+
   fitCanvasToViewport() {
-    const vpRect = this.workspace.getBoundingClientRect();
-    const availableW = vpRect.width - 64;
-    const availableH = vpRect.height - 124; // Generous margin so paper never collides with bottom dock
-    const fitScale = Math.min(availableW / this.canvasWidth, availableH / this.canvasHeight, 1.0);
-    this.setZoom(Math.max(0.3, Math.round(fitScale * 100) / 100));
+    if (!this.workspace || !this.paperSheet) return;
+    const stage = this.canvasStage || document.getElementById('canvas-stage') || this.workspace;
+    const stageRect = stage.getBoundingClientRect();
+
+    // Leave margin so ink frame breathes beautifully and never overlaps panels
+    const availW = Math.max(300, stageRect.width - 24);
+    const availH = Math.max(180, stageRect.height - 24);
+
+    let targetW = availW;
+    let targetH = targetW * (9 / 16);
+    if (targetH > availH) {
+      targetH = availH;
+      targetW = targetH * (16 / 9);
+    }
+
+    if (this.canvasInkWrapper) {
+      this.canvasInkWrapper.style.width = `${Math.floor(targetW)}px`;
+      this.canvasInkWrapper.style.height = `${Math.floor(targetH)}px`;
+    }
+
+    const scale = targetW / this.canvasWidth;
+    this.paperSheet.style.transform = `scale(${scale})`;
+    this.zoom = scale;
+    if (this.zoomValue) {
+      this.zoomValue.textContent = `${Math.round(this.zoom * 100)}%`;
+    }
+    this.updateEraserIndicator();
+  }
+
+  setZoom(level) {
+    const clamped = Math.max(0.25, Math.min(3.0, level));
+    this.zoom = clamped;
+    this.paperSheet.style.transform = `scale(${this.zoom})`;
+    if (this.canvasInkWrapper) {
+      this.canvasInkWrapper.style.width = `${Math.round(this.canvasWidth * this.zoom)}px`;
+      this.canvasInkWrapper.style.height = `${Math.round(this.canvasHeight * this.zoom)}px`;
+    }
+    if (this.zoomValue) {
+      this.zoomValue.textContent = `${Math.round(this.zoom * 100)}%`;
+    }
+    this.updateEraserIndicator();
   }
 
   setActiveTool(tool) {
