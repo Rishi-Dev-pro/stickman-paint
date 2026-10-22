@@ -1842,3 +1842,337 @@ button {
   transform: scale(0.97);
 }
 
+/* ==========================================================================
+   STICKMAN TRICK PLAYBACK CONTROL BAR (WARRIOR AESTHETIC)
+   ========================================================================== */
+
+.trick-playback-bar {
+  position: absolute;
+  top: 14px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 95;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 16px;
+  background: rgba(15, 23, 42, 0.92);
+  border: 1.5px solid rgba(56, 189, 248, 0.55);
+  border-radius: 9999px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.65), 0 0 18px rgba(56, 189, 248, 0.35);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  user-select: none;
+  transition: opacity 0.22s ease, transform 0.22s cubic-bezier(0.16, 1, 0.3, 1), visibility 0.22s;
+  pointer-events: auto;
+}
+
+.trick-playback-bar.hidden {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transform: translate(-50%, -14px);
+}
+
+.tpb-badge {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-right: 6px;
+  border-right: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.tpb-status-pulse {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--accent-cyan);
+  box-shadow: 0 0 10px var(--accent-cyan);
+  animation: tpb-pulse 1.4s ease-in-out infinite;
+}
+
+@keyframes tpb-pulse {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.35); opacity: 0.6; }
+}
+
+.tpb-trick-name {
+  font-family: var(--font-body);
+  font-size: 11.5px;
+  font-weight: 800;
+  color: #f8fafc;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  max-width: 140px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.tpb-btn-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.tpb-btn {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  border: 1px solid rgba(56, 189, 248, 0.35);
+  background: rgba(56, 189, 248, 0.10);
+  color: #38bdf8;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.tpb-btn:hover {
+  background: rgba(56, 189, 248, 0.28);
+  border-color: var(--accent-cyan);
+  color: #ffffff;
+  box-shadow: 0 0 10px rgba(56, 189, 248, 0.5);
+}
+
+.tpb-btn:active {
+  transform: scale(0.92);
+}
+
+.tpb-stop-btn {
+  border-color: rgba(239, 68, 68, 0.4);
+  background: rgba(239, 68, 68, 0.10);
+  color: #f87171;
+}
+
+.tpb-stop-btn:hover {
+  background: rgba(239, 68, 68, 0.28);
+  border-color: #ef4444;
+  color: #ffffff;
+  box-shadow: 0 0 10px rgba(239, 68, 68, 0.5);
+}
+
+.tpb-progress-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 4px;
+}
+
+.tpb-progress-track {
+  width: 130px;
+  height: 6px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.12);
+  overflow: hidden;
+  position: relative;
+}
+
+.tpb-progress-fill {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, #38bdf8, #818cf8);
+  border-radius: 4px;
+  box-shadow: 0 0 8px rgba(56, 189, 248, 0.8);
+  transition: width 0.08s linear;
+}
+
+.tpb-progress-text {
+  font-family: var(--font-body);
+  font-size: 11px;
+  font-weight: 800;
+  color: #38bdf8;
+  min-width: 34px;
+  text-align: right;
+  letter-spacing: 0.3px;
+}
+
+.tpb-speed-menu {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  padding-left: 6px;
+  border-left: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.tpb-speed-chip {
+  padding: 3px 6px;
+  font-size: 10px;
+  font-weight: 700;
+  font-family: var(--font-body);
+  border-radius: 12px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: #94a3b8;
+  cursor: pointer;
+  transition: all 0.14s ease;
+}
+
+.tpb-speed-chip:hover {
+  color: #f8fafc;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.tpb-speed-chip.active {
+  background: var(--accent-cyan);
+  color: #020617;
+  font-weight: 900;
+  box-shadow: 0 0 8px rgba(56, 189, 248, 0.6);
+}
+
+/* ==========================================================================
+   LOCKED TRICK GALLERY BUTTON STATE
+   ========================================================================== */
+
+#btn-stickman-tricks.locked {
+  border-color: #ef4444 !important;
+  color: #ef4444 !important;
+  background: rgba(239, 68, 68, 0.18) !important;
+  box-shadow: 0 0 16px rgba(239, 68, 68, 0.6) !important;
+  cursor: not-allowed !important;
+  animation: tpb-locked-pulse 1.8s infinite;
+}
+
+@keyframes tpb-locked-pulse {
+  0%, 100% { box-shadow: 0 0 12px rgba(239, 68, 68, 0.4); }
+  50% { box-shadow: 0 0 20px rgba(239, 68, 68, 0.8); }
+}
+
+/* ==========================================================================
+   TRICK OVERWRITE CONFIRMATION MODAL
+   ========================================================================== */
+
+.trick-confirm-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  background: rgba(2, 6, 23, 0.75);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  transition: opacity 0.2s ease, visibility 0.2s;
+}
+
+.trick-confirm-backdrop.hidden {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.trick-confirm-modal {
+  width: 100%;
+  max-width: 440px;
+  background: #0f172a;
+  border: 1.5px solid rgba(56, 189, 248, 0.4);
+  border-radius: 14px;
+  padding: 22px;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8), 0 0 24px rgba(56, 189, 248, 0.25);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.tcm-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.tcm-header h3 {
+  margin: 0;
+  font-family: var(--font-comic);
+  font-size: 18px;
+  color: #f8fafc;
+  letter-spacing: 0.5px;
+}
+
+.tcm-body {
+  margin: 0;
+  font-size: 13px;
+  color: #94a3b8;
+  line-height: 1.5;
+}
+
+.tcm-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 6px;
+  justify-content: flex-end;
+}
+
+.tcm-btn {
+  padding: 8px 14px;
+  border-radius: 8px;
+  font-family: var(--font-body);
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.16s ease;
+  border: 1px solid transparent;
+}
+
+.tcm-cancel-btn {
+  background: rgba(255, 255, 255, 0.08);
+  color: #94a3b8;
+  border-color: rgba(255, 255, 255, 0.12);
+}
+
+.tcm-cancel-btn:hover {
+  background: rgba(255, 255, 255, 0.15);
+  color: #ffffff;
+}
+
+.tcm-keep-btn {
+  background: rgba(56, 189, 248, 0.14);
+  color: var(--accent-cyan);
+  border-color: var(--accent-cyan);
+}
+
+.tcm-keep-btn:hover {
+  background: var(--accent-cyan);
+  color: #020617;
+  box-shadow: 0 0 12px rgba(56, 189, 248, 0.5);
+}
+
+.tcm-clear-btn {
+  background: rgba(239, 68, 68, 0.14);
+  color: #f87171;
+  border-color: #ef4444;
+}
+
+.tcm-clear-btn:hover {
+  background: #ef4444;
+  color: #ffffff;
+  box-shadow: 0 0 12px rgba(239, 68, 68, 0.5);
+}
+
+/* Mobile Responsiveness for Playback Bar */
+@media (max-width: 768px) {
+  .trick-playback-bar {
+    top: 8px;
+    padding: 6px 12px;
+    gap: 8px;
+    max-width: 95%;
+  }
+
+  .tpb-trick-name {
+    max-width: 90px;
+    font-size: 10.5px;
+  }
+
+  .tpb-progress-track {
+    width: 80px;
+  }
+
+  .tpb-speed-chip[data-speed="0.75"],
+  .tpb-speed-chip[data-speed="1.5"],
+  .tpb-speed-chip[data-speed="3"] {
+    display: none;
+  }
+}
+
+

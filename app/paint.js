@@ -608,6 +608,14 @@ class StickmanPaintApp {
     };
   }
 
+  canvasToScreen(cx, cy) {
+    const rect = this.paperSheet.getBoundingClientRect();
+    return {
+      x: rect.left + (cx / this.canvasWidth) * rect.width,
+      y: rect.top + (cy / this.canvasHeight) * rect.height
+    };
+  }
+
   initEvents() {
     // 1. Workspace Pointer Events
     this.workspace.addEventListener('pointerenter', (e) => {
@@ -625,11 +633,17 @@ class StickmanPaintApp {
     });
 
     this.workspace.addEventListener('pointerleave', () => {
+      if (this.trickPlayback && this.trickPlayback.isPlaying) return;
       this.stickmanVisible = false;
       this.stickmanActor.classList.remove('visible');
     });
 
     this.workspace.addEventListener('pointermove', (e) => {
+      // Lock cursor tracking to physical drawing path while Trick is playing
+      if (this.trickPlayback && this.trickPlayback.isPlaying) {
+        return;
+      }
+
       const distFromPrev = Math.hypot(e.clientX - this.targetX, e.clientY - this.targetY);
       // Sudden big jump (> 75px in 1 frame) triggers SURPRISED reaction
       if (distFromPrev > 75 && this.stickman && !this.isDrawing) {
@@ -667,6 +681,12 @@ class StickmanPaintApp {
 
     this.paperSheet.addEventListener('pointerdown', (e) => {
       if (e.button !== 0) return;
+
+      // Lock canvas against manual drawing while Trick is actively playing
+      if (this.trickPlayback && this.trickPlayback.isPlaying) {
+        this.showToast('Stickman is currently drawing! Pause or Stop to draw manually.');
+        return;
+      }
       if (!this.stickmanVisible) {
         this.stickmanVisible = true;
         this.stickmanActor.classList.add('visible');
@@ -897,6 +917,10 @@ class StickmanPaintApp {
     if (tricksBtn) {
       tricksBtn.addEventListener('click', (e) => {
         e.stopPropagation();
+        if (this.trickPlayback && this.trickPlayback.isPlaying) {
+          this.showToast('Stickman is currently drawing! Pause or Stop to browse tricks.');
+          return;
+        }
         if (this.trickGallery) {
           this.closePopovers();
           this.trickGallery.open();
@@ -914,19 +938,29 @@ class StickmanPaintApp {
       });
     }
 
-    const bindTrick = (id, fn) => {
+    const bindTrick = (id, trickId) => {
       const el = document.getElementById(id);
       if (el) {
         el.addEventListener('click', () => {
           this.closePopovers();
-          fn();
+          if (typeof TRICK_GALLERY !== 'undefined' && this.trickGallery) {
+            const t = TRICK_GALLERY.find(item => item.id === trickId);
+            if (t) {
+              this.trickGallery.executeTrick(t);
+              return;
+            }
+          }
+          if (trickId === 'trick-mountain') this.executeTrickMountain();
+          else if (trickId === 'trick-sun') this.executeTrickSun();
+          else if (trickId === 'trick-stairs') this.executeTrickStairs();
+          else if (trickId === 'trick-flag') this.executeTrickFlag();
         });
       }
     };
-    bindTrick('trick-mountain', () => this.executeTrickMountain());
-    bindTrick('trick-sun', () => this.executeTrickSun());
-    bindTrick('trick-stairs', () => this.executeTrickStairs());
-    bindTrick('trick-flag', () => this.executeTrickFlag());
+    bindTrick('trick-mountain', 'trick-mountain');
+    bindTrick('trick-sun', 'trick-sun');
+    bindTrick('trick-stairs', 'trick-stairs');
+    bindTrick('trick-flag', 'trick-flag');
 
     // 7. Palette Swatches
     document.querySelectorAll('.swatch-dot').forEach(btn => {
@@ -1115,6 +1149,11 @@ class StickmanPaintApp {
           this.commitSelection();
         }
       } else if (key === 'escape') {
+        if (this.trickPlayback && (this.trickPlayback.state === 'playing' || this.trickPlayback.state === 'paused')) {
+          e.preventDefault();
+          this.trickPlayback.stop();
+          return;
+        }
         if (this.selection) {
           e.preventDefault();
           this.commitSelection();
@@ -1122,6 +1161,12 @@ class StickmanPaintApp {
         if (this.activeTextBox) {
           e.preventDefault();
           this.cancelTextBox();
+        }
+      } else if (e.code === 'Space' && !e.target.matches('input, textarea')) {
+        if (this.trickPlayback && (this.trickPlayback.state === 'playing' || this.trickPlayback.state === 'paused')) {
+          e.preventDefault();
+          this.trickPlayback.togglePlayPause();
+          return;
         }
       }
     });
@@ -2327,6 +2372,8 @@ class StickmanPaintApp {
     this.isAudioDrawing = false;
   }
 }
+
+window.StickmanPaintApp = StickmanPaintApp;
 
 // Initialize on DOM load
 window.addEventListener('DOMContentLoaded', () => {

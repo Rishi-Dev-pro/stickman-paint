@@ -1751,6 +1751,905 @@
   ];
 
   /* ==========================================================================
+     TRICK ACTION COMPILER
+     Converts any procedural trick into a deterministic sequence of physical
+     drawing actions (strokes, fills, curves) and pen-up movements.
+     ========================================================================== */
+
+  class TrickActionCompiler {
+    static compile(trick, w, h) {
+      if (!trick || typeof trick.draw !== 'function') return [];
+
+      const rawActions = [];
+      let currentMatrix = [1, 0, 0, 1, 0, 0];
+      const matrixStack = [];
+      const stateStack = [];
+
+      let currentState = {
+        strokeStyle: '#000000',
+        fillStyle: '#000000',
+        lineWidth: 2.5,
+        lineCap: 'round',
+        lineJoin: 'round',
+        globalAlpha: 1.0
+      };
+
+      let currentSubpaths = [];
+      let currentPath = [];
+
+      const transformPoint = (x, y) => {
+        const [a, b, c, d, e, f] = currentMatrix;
+        return {
+          x: a * x + c * y + e,
+          y: b * x + d * y + f
+        };
+      };
+
+      const dummyCanvas = document.createElement('canvas');
+      dummyCanvas.width = 1;
+      dummyCanvas.height = 1;
+      const dummyCtx = dummyCanvas.getContext('2d');
+
+      const fakeCtx = {
+        get strokeStyle() { return currentState.strokeStyle; },
+        set strokeStyle(v) { currentState.strokeStyle = v; },
+
+        get fillStyle() { return currentState.fillStyle; },
+        set fillStyle(v) { currentState.fillStyle = v; },
+
+        get lineWidth() { return currentState.lineWidth; },
+        set lineWidth(v) { currentState.lineWidth = v; },
+
+        get lineCap() { return currentState.lineCap; },
+        set lineCap(v) { currentState.lineCap = v; },
+
+        get lineJoin() { return currentState.lineJoin; },
+        set lineJoin(v) { currentState.lineJoin = v; },
+
+        get globalAlpha() { return currentState.globalAlpha; },
+        set globalAlpha(v) { currentState.globalAlpha = v; },
+
+        save() {
+          matrixStack.push([...currentMatrix]);
+          stateStack.push({ ...currentState });
+        },
+
+        restore() {
+          if (matrixStack.length > 0) currentMatrix = matrixStack.pop();
+          if (stateStack.length > 0) currentState = stateStack.pop();
+        },
+
+        translate(tx, ty) {
+          const [a, b, c, d, e, f] = currentMatrix;
+          currentMatrix = [a, b, c, d, a * tx + c * ty + e, b * tx + d * ty + f];
+        },
+
+        scale(sx, sy) {
+          const [a, b, c, d, e, f] = currentMatrix;
+          currentMatrix = [a * sx, b * sx, c * sy, d * sy, e, f];
+        },
+
+        rotate(rad) {
+          const cos = Math.cos(rad);
+          const sin = Math.sin(rad);
+          const [a, b, c, d, e, f] = currentMatrix;
+          currentMatrix = [a * cos + c * sin, b * cos + d * sin, -a * sin + c * cos, -b * sin + d * cos, e, f];
+        },
+
+        beginPath() {
+          currentSubpaths = [];
+          currentPath = [];
+        },
+
+        closePath() {
+          if (currentPath.length > 1) {
+            currentPath.push({ ...currentPath[0] });
+          }
+        },
+
+        moveTo(x, y) {
+          const pt = transformPoint(x, y);
+          currentPath = [pt];
+          currentSubpaths.push(currentPath);
+        },
+
+        lineTo(x, y) {
+          const pt = transformPoint(x, y);
+          if (currentPath.length === 0) {
+            currentPath = [pt];
+            currentSubpaths.push(currentPath);
+          } else {
+            currentPath.push(pt);
+          }
+        },
+
+        quadraticCurveTo(cpx, cpy, x, y) {
+          if (currentPath.length === 0) {
+            currentPath = [transformPoint(cpx, cpy)];
+            currentSubpaths.push(currentPath);
+          }
+          const p0 = currentPath[currentPath.length - 1];
+          const p1 = transformPoint(cpx, cpy);
+          const p2 = transformPoint(x, y);
+          const steps = 10;
+          for (let i = 1; i <= steps; i++) {
+            const t = i / steps;
+            const inv = 1 - t;
+            currentPath.push({
+              x: inv * inv * p0.x + 2 * inv * t * p1.x + t * t * p2.x,
+              y: inv * inv * p0.y + 2 * inv * t * p1.y + t * t * p2.y
+            });
+          }
+        },
+
+        bezierCurveTo(cp1x, cp1y, cp2x, cp2y, x, y) {
+          if (currentPath.length === 0) {
+            currentPath = [transformPoint(cp1x, cp1y)];
+            currentSubpaths.push(currentPath);
+          }
+          const p0 = currentPath[currentPath.length - 1];
+          const p1 = transformPoint(cp1x, cp1y);
+          const p2 = transformPoint(cp2x, cp2y);
+          const p3 = transformPoint(x, y);
+          const steps = 14;
+          for (let i = 1; i <= steps; i++) {
+            const t = i / steps;
+            const inv = 1 - t;
+            currentPath.push({
+              x: inv * inv * inv * p0.x + 3 * inv * inv * t * p1.x + 3 * inv * t * t * p2.x + t * t * t * p3.x,
+              y: inv * inv * inv * p0.y + 3 * inv * inv * t * p1.y + 3 * inv * t * t * p2.y + t * t * t * p3.y
+            });
+          }
+        },
+
+        arc(cx, cy, r, sAngle, eAngle, counterclockwise = false) {
+          let span = eAngle - sAngle;
+          if (!counterclockwise && span < 0) span += Math.PI * 2;
+          if (counterclockwise && span > 0) span -= Math.PI * 2;
+          const steps = Math.max(8, Math.min(36, Math.round(Math.abs(span) / (Math.PI / 12))));
+          for (let i = (currentPath.length === 0 ? 0 : 1); i <= steps; i++) {
+            const t = i / steps;
+            const theta = sAngle + span * t;
+            const pt = transformPoint(cx + r * Math.cos(theta), cy + r * Math.sin(theta));
+            if (currentPath.length === 0) {
+              currentPath = [pt];
+              currentSubpaths.push(currentPath);
+            } else {
+              currentPath.push(pt);
+            }
+          }
+        },
+
+        ellipse(cx, cy, rx, ry, rotation = 0, sAngle = 0, eAngle = Math.PI * 2, counterclockwise = false) {
+          let span = eAngle - sAngle;
+          if (!counterclockwise && span < 0) span += Math.PI * 2;
+          if (counterclockwise && span > 0) span -= Math.PI * 2;
+          const steps = Math.max(8, Math.min(36, Math.round(Math.abs(span) / (Math.PI / 12))));
+          const cosR = Math.cos(rotation);
+          const sinR = Math.sin(rotation);
+          for (let i = (currentPath.length === 0 ? 0 : 1); i <= steps; i++) {
+            const t = i / steps;
+            const theta = sAngle + span * t;
+            const ex = rx * Math.cos(theta);
+            const ey = ry * Math.sin(theta);
+            const rotX = cx + (ex * cosR - ey * sinR);
+            const rotY = cy + (ex * sinR + ey * cosR);
+            const pt = transformPoint(rotX, rotY);
+            if (currentPath.length === 0) {
+              currentPath = [pt];
+              currentSubpaths.push(currentPath);
+            } else {
+              currentPath.push(pt);
+            }
+          }
+        },
+
+        roundRect(x, y, rw, rh, rad = 0) {
+          this.rect(x, y, rw, rh);
+        },
+
+        rect(x, y, rw, rh) {
+          this.moveTo(x, y);
+          this.lineTo(x + rw, y);
+          this.lineTo(x + rw, y + rh);
+          this.lineTo(x, y + rh);
+          this.closePath();
+        },
+
+        fillRect(x, y, rw, rh) {
+          const p1 = transformPoint(x, y);
+          const p2 = transformPoint(x + rw, y);
+          const p3 = transformPoint(x + rw, y + rh);
+          const p4 = transformPoint(x, y + rh);
+          rawActions.push({
+            type: 'fill',
+            subpaths: [[p1, p2, p3, p4, { ...p1 }]],
+            fillStyle: currentState.fillStyle,
+            globalAlpha: currentState.globalAlpha,
+            centroid: { x: (p1.x + p3.x) / 2, y: (p1.y + p3.y) / 2 },
+            duration: 300
+          });
+        },
+
+        strokeRect(x, y, rw, rh) {
+          const p1 = transformPoint(x, y);
+          const p2 = transformPoint(x + rw, y);
+          const p3 = transformPoint(x + rw, y + rh);
+          const p4 = transformPoint(x, y + rh);
+          const pts = [p1, p2, p3, p4, { ...p1 }];
+          rawActions.push(createStrokeAction(pts, currentState));
+        },
+
+        stroke() {
+          currentSubpaths.forEach(sub => {
+            if (sub.length > 1) {
+              rawActions.push(createStrokeAction(sub, currentState));
+            }
+          });
+        },
+
+        fill() {
+          if (currentSubpaths.length > 0 && currentSubpaths.some(s => s.length > 1)) {
+            let cx = 0, cy = 0, totalPts = 0;
+            currentSubpaths.forEach(s => {
+              s.forEach(p => { cx += p.x; cy += p.y; totalPts++; });
+            });
+            const centroid = totalPts > 0 ? { x: cx / totalPts, y: cy / totalPts } : { x: w / 2, y: h / 2 };
+            rawActions.push({
+              type: 'fill',
+              subpaths: currentSubpaths.map(s => s.map(p => ({ ...p }))),
+              fillStyle: currentState.fillStyle,
+              globalAlpha: currentState.globalAlpha,
+              centroid,
+              duration: 320
+            });
+          }
+        },
+
+        createLinearGradient(x0, y0, x1, y1) {
+          const p0 = transformPoint(x0, y0);
+          const p1 = transformPoint(x1, y1);
+          return dummyCtx.createLinearGradient(p0.x, p0.y, p1.x, p1.y);
+        },
+
+        createRadialGradient(x0, y0, r0, x1, y1, r1) {
+          const p0 = transformPoint(x0, y0);
+          const p1 = transformPoint(x1, y1);
+          const scaleX = Math.hypot(currentMatrix[0], currentMatrix[1]) || 1;
+          return dummyCtx.createRadialGradient(p0.x, p0.y, r0 * scaleX, p1.x, p1.y, r1 * scaleX);
+        },
+
+        get font() { return currentState.font || '10px sans-serif'; },
+        set font(v) { currentState.font = v; },
+
+        get textAlign() { return currentState.textAlign || 'start'; },
+        set textAlign(v) { currentState.textAlign = v; },
+
+        get textBaseline() { return currentState.textBaseline || 'alphabetic'; },
+        set textBaseline(v) { currentState.textBaseline = v; },
+
+        fillText(text, x, y) {
+          const pt = transformPoint(x, y);
+          rawActions.push({
+            type: 'text',
+            text,
+            x: pt.x,
+            y: pt.y,
+            centroid: pt,
+            fillStyle: currentState.fillStyle,
+            font: currentState.font,
+            textAlign: currentState.textAlign,
+            textBaseline: currentState.textBaseline,
+            globalAlpha: currentState.globalAlpha,
+            duration: 250
+          });
+        },
+
+        strokeText(text, x, y) {
+          const pt = transformPoint(x, y);
+          rawActions.push({
+            type: 'text',
+            text,
+            isStroke: true,
+            x: pt.x,
+            y: pt.y,
+            centroid: pt,
+            strokeStyle: currentState.strokeStyle,
+            lineWidth: currentState.lineWidth,
+            font: currentState.font,
+            textAlign: currentState.textAlign,
+            textBaseline: currentState.textBaseline,
+            globalAlpha: currentState.globalAlpha,
+            duration: 250
+          });
+        },
+
+        setLineDash() {},
+        clearRect() {}
+      };
+
+      function createStrokeAction(pts, state) {
+        let length = 0;
+        const distances = [0];
+        for (let i = 1; i < pts.length; i++) {
+          const d = Math.hypot(pts[i].x - pts[i - 1].x, pts[i].y - pts[i - 1].y);
+          length += d;
+          distances.push(length);
+        }
+        return {
+          type: 'stroke',
+          points: pts.map(p => ({ ...p })),
+          distances,
+          length,
+          strokeStyle: state.strokeStyle,
+          lineWidth: state.lineWidth,
+          lineCap: state.lineCap,
+          lineJoin: state.lineJoin,
+          globalAlpha: state.globalAlpha,
+          duration: Math.max(100, Math.min(1800, length * 1.35))
+        };
+      }
+
+      // Execute procedural drawing logic against our recording context
+      trick.draw(fakeCtx, w, h);
+
+      // Post-process: insert physical pen-up movements between distant segments
+      const actions = [];
+      let lastPoint = null;
+
+      rawActions.forEach(action => {
+        let startPoint = null;
+        if (action.type === 'stroke' && action.points.length > 0) {
+          startPoint = action.points[0];
+        } else if (action.type === 'fill' && action.centroid) {
+          startPoint = action.centroid;
+        }
+
+        if (startPoint) {
+          if (lastPoint) {
+            const dist = Math.hypot(startPoint.x - lastPoint.x, startPoint.y - lastPoint.y);
+            if (dist > 12) {
+              actions.push({
+                type: 'move',
+                from: { ...lastPoint },
+                to: { ...startPoint },
+                length: dist,
+                duration: Math.max(140, Math.min(800, dist * 0.75))
+              });
+            }
+          }
+          lastPoint = action.type === 'stroke' ? action.points[action.points.length - 1] : action.centroid;
+        }
+
+        actions.push(action);
+      });
+
+      return actions;
+    }
+  }
+
+  /* ==========================================================================
+     INTERACTIVE TRICK PLAYBACK ENGINE
+     Controls progressive rendering, sub-stroke physics, speed modulation,
+     pause/resume, graceful stop, and Stickman synchronization.
+     ========================================================================== */
+
+  class TrickPlaybackEngine {
+    constructor(paintApp) {
+      this.paintApp = paintApp;
+      this.state = 'idle'; // 'idle' | 'preparing' | 'playing' | 'paused' | 'stopped' | 'completed'
+      this.currentTrick = null;
+      this.actions = [];
+      this.currentActionIndex = 0;
+      this.actionProgress = 0;
+      this.totalDuration = 0;
+      this.playbackSpeed = 1.0;
+      this.lastTime = 0;
+      this.rafId = null;
+      this.targetLayer = null;
+      this.lastRenderedPoint = null;
+
+      // DOM UI Elements
+      this.bar = document.getElementById('trick-playback-bar');
+      this.trickNameEl = document.getElementById('tpb-trick-name');
+      this.playPauseBtn = document.getElementById('tpb-play-pause');
+      this.iconPause = this.playPauseBtn?.querySelector('.tpb-icon-pause');
+      this.iconPlay = this.playPauseBtn?.querySelector('.tpb-icon-play');
+      this.stopBtn = document.getElementById('tpb-stop');
+      this.progressFill = document.getElementById('tpb-progress-fill');
+      this.progressText = document.getElementById('tpb-progress-text');
+      this.speedMenu = document.getElementById('tpb-speed-menu');
+      this.tricksBtn = document.getElementById('btn-stickman-tricks');
+
+      this.initEvents();
+    }
+
+    get isPlaying() {
+      return this.state === 'playing' || this.state === 'preparing';
+    }
+
+    initEvents() {
+      // 1. Play / Pause Button
+      if (this.playPauseBtn) {
+        this.playPauseBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          this.togglePlayPause();
+        });
+      }
+
+      // 2. Stop Button
+      if (this.stopBtn) {
+        this.stopBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          this.stop();
+        });
+      }
+
+      // 3. Speed Selector Chips
+      if (this.speedMenu) {
+        this.speedMenu.addEventListener('click', (e) => {
+          const chip = e.target.closest('.tpb-speed-chip');
+          if (!chip) return;
+          e.stopPropagation();
+          const speed = parseFloat(chip.dataset.speed);
+          if (!isNaN(speed) && speed > 0) {
+            this.setSpeed(speed);
+          }
+        });
+      }
+
+      // 4. Hotkeys (Space = Play/Pause, Esc = Stop)
+      window.addEventListener('keydown', (e) => {
+        if (this.state === 'playing' || this.state === 'paused') {
+          if (e.code === 'Space' && !e.target.matches('input, textarea')) {
+            e.preventDefault();
+            this.togglePlayPause();
+          } else if (e.code === 'Escape') {
+            e.preventDefault();
+            this.stop();
+          }
+        }
+      });
+    }
+
+    start(trick) {
+      if (!trick) return;
+
+      // Single playback instance protection
+      if (this.isPlaying) {
+        this.paintApp.showToast('Stickman is currently drawing! Pause or Stop first.');
+        return;
+      }
+
+      // Stop any orphan loops
+      this.cancelAnimation();
+
+      this.state = 'preparing';
+      this.currentTrick = trick;
+      this.currentActionIndex = 0;
+      this.actionProgress = 0;
+      this.lastRenderedPoint = null;
+
+      // Determine Target Layer (Respect Background Protection)
+      let target = this.paintApp.getActiveLayer();
+      if (!target || target.isBackground) {
+        const nonBg = this.paintApp.layers.find(l => !l.isBackground && l.visible);
+        if (nonBg) {
+          this.paintApp.activeLayerIndex = this.paintApp.layers.indexOf(nonBg);
+          target = nonBg;
+        } else {
+          target = this.paintApp.addLayer('Drawing Layer', false);
+        }
+        this.paintApp.renderLayersUI();
+      }
+      this.targetLayer = target;
+
+      // Compile trick actions
+      const w = this.paintApp.canvasWidth;
+      const h = this.paintApp.canvasHeight;
+      this.actions = TrickActionCompiler.compile(trick, w, h);
+
+      if (!this.actions || this.actions.length === 0) {
+        this.paintApp.showToast('Trick contains no drawable actions.');
+        this.state = 'idle';
+        return;
+      }
+
+      // Calculate total duration for precise progress tracking
+      this.totalDuration = this.actions.reduce((acc, a) => acc + (a.duration || 200), 0);
+
+      // Lock Gallery and manual drawing
+      this.lockGallery(true);
+      this.paintApp.isDrawingLocked = true;
+
+      // Show Playback Bar with trick details
+      if (this.trickNameEl) this.trickNameEl.textContent = trick.name;
+      this.updateProgressUI(0);
+      this.updatePlayPauseIcon(true);
+      if (this.bar) this.bar.classList.remove('hidden');
+
+      // Stickman initial positioning
+      if (this.paintApp.stickman) {
+        this.paintApp.stickman.setExpression('FOCUSED');
+      }
+      this.paintApp.stickmanVisible = true;
+      if (this.paintApp.stickmanActor) {
+        this.paintApp.stickmanActor.classList.add('visible');
+      }
+
+      // Begin playback
+      this.state = 'playing';
+      this.lastTime = performance.now();
+      this.loop = this.loop.bind(this);
+      this.rafId = requestAnimationFrame(this.loop);
+    }
+
+    loop(timestamp) {
+      if (this.state !== 'playing') return;
+
+      const dt = Math.min(timestamp - this.lastTime, 100);
+      this.lastTime = timestamp;
+
+      const scaledDt = dt * this.playbackSpeed;
+
+      if (this.currentActionIndex < this.actions.length) {
+        const action = this.actions[this.currentActionIndex];
+        const nominalDur = Math.max(30, action.duration || 200);
+
+        // Advance progress within current action
+        const prevProgress = this.actionProgress;
+        this.actionProgress = Math.min(1.0, this.actionProgress + (scaledDt / nominalDur));
+
+        // Render current action increment
+        this.stepAction(action, prevProgress, this.actionProgress);
+
+        // Calculate and update overall progress percentage
+        this.calculateAndDisplayProgress();
+
+        if (this.actionProgress >= 1.0) {
+          // Action complete
+          this.finalizeAction(action);
+          this.currentActionIndex++;
+          this.actionProgress = 0;
+          this.lastRenderedPoint = null;
+        }
+
+        this.rafId = requestAnimationFrame(this.loop);
+      } else {
+        // All actions complete!
+        this.complete();
+      }
+    }
+
+    stepAction(action, prevP, currP) {
+      if (action.type === 'stroke') {
+        const len = action.length;
+        if (len <= 0) return;
+
+        const curDist = currP * len;
+        const curPoint = this.interpolateStrokePoint(action, curDist);
+
+        const startPoint = this.lastRenderedPoint || (action.points.length > 0 ? action.points[0] : curPoint);
+
+        // Draw sub-segment directly onto active layer canvas
+        if (this.targetLayer && this.targetLayer.ctx) {
+          const ctx = this.targetLayer.ctx;
+          ctx.save();
+          ctx.strokeStyle = action.strokeStyle || '#000000';
+          ctx.lineWidth = action.lineWidth || 2;
+          ctx.lineCap = action.lineCap || 'round';
+          ctx.lineJoin = action.lineJoin || 'round';
+          ctx.globalAlpha = action.globalAlpha !== undefined ? action.globalAlpha : 1.0;
+
+          ctx.beginPath();
+          ctx.moveTo(startPoint.x, startPoint.y);
+          ctx.lineTo(curPoint.x, curPoint.y);
+          ctx.stroke();
+          ctx.restore();
+        }
+
+        this.lastRenderedPoint = curPoint;
+
+        // Stickman Pen Nib Tracking
+        const screen = this.paintApp.canvasToScreen(curPoint.x, curPoint.y);
+        this.paintApp.targetX = screen.x;
+        this.paintApp.targetY = screen.y;
+        this.paintApp.isDrawing = true;
+        this.paintApp.setStickmanPose('drawing');
+        this.paintApp.playPencilAudio();
+
+      } else if (action.type === 'move') {
+        // Physical Pen-Up Travel between drawing clusters
+        const x = action.from.x + (action.to.x - action.from.x) * currP;
+        const y = action.from.y + (action.to.y - action.from.y) * currP;
+
+        const screen = this.paintApp.canvasToScreen(x, y);
+        this.paintApp.targetX = screen.x;
+        this.paintApp.targetY = screen.y;
+        this.paintApp.isDrawing = false;
+        this.paintApp.setStickmanPose('hover');
+        this.paintApp.stopPencilAudio();
+
+        // Speed-adaptive movement dynamics
+        if (this.paintApp.stickman) {
+          if (this.playbackSpeed >= 2.0) {
+            this.paintApp.stickman.smoothedVelocity = 18;
+          } else if (this.playbackSpeed <= 0.75) {
+            this.paintApp.stickman.smoothedVelocity = 3;
+          }
+        }
+
+      } else if (action.type === 'fill') {
+        // Swirling gesture around centroid followed by smooth color deposition
+        const angle = currP * Math.PI * 4;
+        const radius = Math.min(18, 12);
+        const swirlX = action.centroid.x + Math.cos(angle) * radius;
+        const swirlY = action.centroid.y + Math.sin(angle) * radius;
+
+        const screen = this.paintApp.canvasToScreen(swirlX, swirlY);
+        this.paintApp.targetX = screen.x;
+        this.paintApp.targetY = screen.y;
+        this.paintApp.isDrawing = true;
+        this.paintApp.setStickmanPose('drawing');
+        this.paintApp.playPencilAudio();
+
+        if (currP >= 0.5 && !action._renderedFill) {
+          action._renderedFill = true;
+          this.renderFill(action);
+        }
+      } else if (action.type === 'text') {
+        const screen = this.paintApp.canvasToScreen(action.x, action.y);
+        this.paintApp.targetX = screen.x;
+        this.paintApp.targetY = screen.y;
+        this.paintApp.isDrawing = true;
+        this.paintApp.setStickmanPose('drawing');
+        this.paintApp.playPencilAudio();
+
+        if (currP >= 0.5 && !action._renderedText) {
+          action._renderedText = true;
+          this.renderText(action);
+        }
+      }
+    }
+
+    renderText(action) {
+      if (!this.targetLayer || !this.targetLayer.ctx) return;
+      const ctx = this.targetLayer.ctx;
+      ctx.save();
+      if (action.font) ctx.font = action.font;
+      if (action.textAlign) ctx.textAlign = action.textAlign;
+      if (action.textBaseline) ctx.textBaseline = action.textBaseline;
+      ctx.globalAlpha = action.globalAlpha !== undefined ? action.globalAlpha : 1.0;
+      if (action.isStroke) {
+        ctx.strokeStyle = action.strokeStyle || '#000000';
+        ctx.lineWidth = action.lineWidth || 1;
+        ctx.strokeText(action.text, action.x, action.y);
+      } else {
+        ctx.fillStyle = action.fillStyle || '#000000';
+        ctx.fillText(action.text, action.x, action.y);
+      }
+      ctx.restore();
+    }
+
+    interpolateStrokePoint(action, targetDist) {
+      const pts = action.points;
+      const dists = action.distances;
+      if (pts.length === 1) return pts[0];
+      if (targetDist <= 0) return pts[0];
+      if (targetDist >= action.length) return pts[pts.length - 1];
+
+      // Find segment
+      for (let i = 0; i < dists.length - 1; i++) {
+        if (targetDist <= dists[i + 1]) {
+          const segSpan = dists[i + 1] - dists[i];
+          const localT = segSpan > 0 ? (targetDist - dists[i]) / segSpan : 0;
+          return {
+            x: pts[i].x + (pts[i + 1].x - pts[i].x) * localT,
+            y: pts[i].y + (pts[i + 1].y - pts[i].y) * localT
+          };
+        }
+      }
+      return pts[pts.length - 1];
+    }
+
+    renderFill(action) {
+      if (!this.targetLayer || !this.targetLayer.ctx) return;
+      const ctx = this.targetLayer.ctx;
+      ctx.save();
+      ctx.fillStyle = action.fillStyle;
+      ctx.globalAlpha = action.globalAlpha !== undefined ? action.globalAlpha : 1.0;
+      ctx.beginPath();
+      action.subpaths.forEach(sub => {
+        if (sub.length > 0) {
+          ctx.moveTo(sub[0].x, sub[0].y);
+          for (let i = 1; i < sub.length; i++) {
+            ctx.lineTo(sub[i].x, sub[i].y);
+          }
+          ctx.closePath();
+        }
+      });
+      ctx.fill();
+      ctx.restore();
+    }
+
+    finalizeAction(action) {
+      if (action.type === 'fill' && !action._renderedFill) {
+        action._renderedFill = true;
+        this.renderFill(action);
+      } else if (action.type === 'text' && !action._renderedText) {
+        action._renderedText = true;
+        this.renderText(action);
+      }
+    }
+
+    calculateAndDisplayProgress() {
+      if (this.totalDuration <= 0) return;
+      let completedDur = 0;
+      for (let i = 0; i < this.currentActionIndex; i++) {
+        completedDur += this.actions[i].duration || 200;
+      }
+      if (this.currentActionIndex < this.actions.length) {
+        completedDur += this.actionProgress * (this.actions[this.currentActionIndex].duration || 200);
+      }
+      const pct = Math.min(100, Math.max(0, Math.round((completedDur / this.totalDuration) * 100)));
+      this.updateProgressUI(pct);
+    }
+
+    updateProgressUI(pct) {
+      if (this.progressFill) this.progressFill.style.width = `${pct}%`;
+      if (this.progressText) this.progressText.textContent = `${pct}%`;
+    }
+
+    togglePlayPause() {
+      if (this.state === 'playing') {
+        this.pause();
+      } else if (this.state === 'paused') {
+        this.resume();
+      }
+    }
+
+    pause() {
+      if (this.state !== 'playing') return;
+      this.state = 'paused';
+      this.cancelAnimation();
+      this.paintApp.isDrawing = false;
+      this.paintApp.stopPencilAudio();
+      this.updatePlayPauseIcon(false);
+      this.paintApp.showToast('Trick Playback Paused');
+    }
+
+    resume() {
+      if (this.state !== 'paused') return;
+      this.state = 'playing';
+      this.lastTime = performance.now();
+      this.updatePlayPauseIcon(true);
+      this.rafId = requestAnimationFrame(this.loop);
+      this.paintApp.showToast('Resuming Drawing');
+    }
+
+    setSpeed(speed) {
+      if (speed <= 0) return;
+      this.playbackSpeed = speed;
+
+      // Update UI speed chips
+      if (this.speedMenu) {
+        this.speedMenu.querySelectorAll('.tpb-speed-chip').forEach(c => {
+          c.classList.toggle('active', parseFloat(c.dataset.speed) === speed);
+        });
+      }
+
+      // Update Stickman posture & velocity
+      if (this.paintApp.stickman) {
+        if (speed >= 3.0) {
+          this.paintApp.stickman.setExpression('DETERMINED');
+        } else if (speed <= 0.75) {
+          this.paintApp.stickman.setExpression('NORMAL');
+        }
+      }
+
+      this.paintApp.showToast(`Speed: ${speed}×`);
+    }
+
+    stop() {
+      if (this.state === 'idle' || this.state === 'stopped') return;
+
+      this.cancelAnimation();
+      this.paintApp.isDrawing = false;
+      this.paintApp.stopPencilAudio();
+
+      const trickName = this.currentTrick ? this.currentTrick.name : 'Drawing';
+      this.state = 'stopped';
+
+      // PARTIAL ARTWORK REMAINS ON CANVAS — RECORD EXACT LOGICAL TRANSACTION
+      this.paintApp.saveHistory(`Trick: ${trickName} (Partial)`);
+
+      // Character graceful exit
+      this.paintApp.setStickmanPose('hover');
+      if (this.paintApp.stickman) {
+        this.paintApp.stickman.triggerVictory();
+      }
+
+      // Unlock UI
+      this.lockGallery(false);
+      this.paintApp.isDrawingLocked = false;
+
+      // Hide playback controls
+      if (this.bar) this.bar.classList.add('hidden');
+
+      this.paintApp.showToast('Drawing Stopped — Partial Artwork Saved');
+    }
+
+    complete() {
+      this.cancelAnimation();
+      this.state = 'completed';
+      this.paintApp.isDrawing = false;
+      this.paintApp.stopPencilAudio();
+      this.updateProgressUI(100);
+
+      const trickName = this.currentTrick ? this.currentTrick.name : 'Drawing';
+
+      // Record completed logical history transaction
+      this.paintApp.saveHistory(`Trick: ${trickName}`);
+
+      // Sigma Victory Reaction Sequence
+      this.paintApp.setStickmanPose('idle');
+      if (this.paintApp.stickman) {
+        this.paintApp.stickman.triggerVictory();
+      }
+
+      // Unlock UI
+      this.lockGallery(false);
+      this.paintApp.isDrawingLocked = false;
+
+      // Non-blocking completion feedback
+      this.paintApp.showToast(`✦ Trick Complete: ${trickName}`);
+
+      // Auto-collapse control bar after 2 seconds
+      setTimeout(() => {
+        if (this.state === 'completed' && this.bar) {
+          this.bar.classList.add('hidden');
+        }
+      }, 2000);
+    }
+
+    cancelAnimation() {
+      if (this.rafId) {
+        cancelAnimationFrame(this.rafId);
+        this.rafId = null;
+      }
+    }
+
+    lockGallery(locked) {
+      if (!this.tricksBtn) return;
+      if (locked) {
+        this.tricksBtn.classList.add('locked');
+        const text = this.tricksBtn.querySelector('.tricks-text');
+        if (text) text.textContent = 'DRAWING...';
+        this.tricksBtn.setAttribute('title', 'Trick in progress — pause or stop to select another');
+      } else {
+        this.tricksBtn.classList.remove('locked');
+        const text = this.tricksBtn.querySelector('.tricks-text');
+        if (text) text.textContent = 'TRICKS';
+        this.tricksBtn.setAttribute('title', 'Stickman Tricks');
+      }
+    }
+
+    updatePlayPauseIcon(isPlaying) {
+      if (this.iconPause && this.iconPlay) {
+        if (isPlaying) {
+          this.iconPause.classList.remove('hidden');
+          this.iconPlay.classList.add('hidden');
+          if (this.playPauseBtn) this.playPauseBtn.setAttribute('title', 'Pause (Space)');
+        } else {
+          this.iconPause.classList.add('hidden');
+          this.iconPlay.classList.remove('hidden');
+          if (this.playPauseBtn) this.playPauseBtn.setAttribute('title', 'Resume (Space)');
+        }
+      }
+    }
+  }
+
+  /* ==========================================================================
      TRICKS GALLERY MODAL CONTROLLER
      ========================================================================== */
 
@@ -1759,7 +2658,14 @@
       this.paintApp = paintApp;
       this.currentCategory = 'All';
       this.modal = null;
+      this.playbackEngine = new TrickPlaybackEngine(paintApp);
+      this.paintApp.trickPlayback = this.playbackEngine;
+
+      this.confirmBackdrop = document.getElementById('trick-confirm-backdrop');
+      this.pendingTrick = null;
+
       this.initModal();
+      this.initConfirmModal();
     }
 
     initModal() {
@@ -1875,39 +2781,86 @@
       });
     }
 
+    initConfirmModal() {
+      if (!this.confirmBackdrop) return;
+      const cancelBtn = document.getElementById('tcm-cancel-btn');
+      const keepBtn = document.getElementById('tcm-keep-btn');
+      const clearBtn = document.getElementById('tcm-clear-btn');
+
+      if (cancelBtn) {
+        cancelBtn.addEventListener('click', () => {
+          this.confirmBackdrop.classList.add('hidden');
+          this.pendingTrick = null;
+        });
+      }
+
+      if (keepBtn) {
+        keepBtn.addEventListener('click', () => {
+          this.confirmBackdrop.classList.add('hidden');
+          if (this.pendingTrick) {
+            const t = this.pendingTrick;
+            this.pendingTrick = null;
+            this.playbackEngine.start(t);
+          }
+        });
+      }
+
+      if (clearBtn) {
+        clearBtn.addEventListener('click', () => {
+          this.confirmBackdrop.classList.add('hidden');
+          if (this.pendingTrick) {
+            const t = this.pendingTrick;
+            this.pendingTrick = null;
+            // Clear drawing layers, then start trick
+            const layer = this.paintApp.getActiveLayer();
+            if (layer && !layer.isBackground) {
+              layer.ctx.clearRect(0, 0, this.paintApp.canvasWidth, this.paintApp.canvasHeight);
+            }
+            this.playbackEngine.start(t);
+          }
+        });
+      }
+    }
+
+    hasDrawingOnCanvas() {
+      // Check if user has drawn anything beyond the initial blank state
+      return this.paintApp && this.paintApp.historyIndex > 0;
+    }
+
+    promptConfirmation(trick) {
+      this.pendingTrick = trick;
+      if (this.confirmBackdrop) {
+        this.confirmBackdrop.classList.remove('hidden');
+      } else {
+        this.playbackEngine.start(trick);
+      }
+    }
+
     executeTrick(trick) {
       if (!trick || !this.paintApp) return;
 
+      // Block if playback already running
+      if (this.playbackEngine && this.playbackEngine.isPlaying) {
+        this.paintApp.showToast('Stickman is currently drawing! Pause or Stop first.');
+        return;
+      }
+
       this.close();
 
-      // 1. Stickman Focused Pose & Sound
-      if (this.paintApp.stickman) {
-        this.paintApp.stickman.setExpression('FOCUSED', 450);
-        this.paintApp.setStickmanPose('drawing');
+      // Check for existing user artwork on canvas
+      if (this.hasDrawingOnCanvas()) {
+        this.promptConfirmation(trick);
+      } else {
+        this.playbackEngine.start(trick);
       }
-      this.paintApp.playPencilAudio();
-
-      // 2. Render Artwork onto Active Layer
-      const layer = this.paintApp.getActiveLayer();
-      if (layer && layer.ctx) {
-        const ctx = layer.ctx;
-        ctx.save();
-        trick.draw(ctx, this.paintApp.canvasWidth, this.paintApp.canvasHeight, this.paintApp);
-        ctx.restore();
-        this.paintApp.saveHistory(`Trick: ${trick.name}`);
-      }
-
-      // 3. Stickman Victory Celebration
-      setTimeout(() => {
-        this.paintApp.stopPencilAudio();
-        if (this.paintApp.stickman) {
-          this.paintApp.stickman.triggerVictory();
-        }
-        this.paintApp.showToast(`Trick Mastered: ${trick.name}`);
-      }, 300);
     }
 
     open() {
+      // Check if playback is active
+      if (this.playbackEngine && this.playbackEngine.isPlaying) {
+        this.paintApp.showToast('Stickman is currently drawing! Pause or Stop to browse tricks.');
+        return;
+      }
       if (!this.modal) return;
       this.modal.classList.add('open');
       this.renderCards();
@@ -1921,6 +2874,8 @@
 
   // Export to window
   window.TRICK_GALLERY = TRICK_GALLERY;
+  window.TrickActionCompiler = TrickActionCompiler;
+  window.TrickPlaybackEngine = TrickPlaybackEngine;
   window.TrickGalleryManager = TrickGalleryManager;
 
 })(window);

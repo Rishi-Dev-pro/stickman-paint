@@ -425,6 +425,41 @@
           </div>
         </div>
 
+        <!-- Compact Floating Warrior Playback Control Bar -->
+        <div class="trick-playback-bar hidden" id="trick-playback-bar" role="region" aria-label="Stickman Trick Drawing Controls">
+          <div class="tpb-badge">
+            <span class="tpb-status-pulse"></span>
+            <span class="tpb-trick-name" id="tpb-trick-name">Warrior Peak</span>
+          </div>
+
+          <div class="tpb-btn-group">
+            <button class="tpb-btn tpb-play-pause-btn" id="tpb-play-pause" title="Pause / Resume (Space)" aria-label="Pause or Resume">
+              <svg class="tpb-icon-pause" viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><rect x="6" y="4" width="4" height="16" rx="1"/><rect x="14" y="4" width="4" height="16" rx="1"/></svg>
+              <svg class="tpb-icon-play hidden" viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><polygon points="6 3 20 12 6 21 6 3"/></svg>
+            </button>
+            <button class="tpb-btn tpb-stop-btn" id="tpb-stop" title="Stop Drawing &amp; Keep Progress (Esc)" aria-label="Stop">
+              <svg viewBox="0 0 24 24" width="13" height="13" fill="currentColor"><rect x="4" y="4" width="16" height="16" rx="2"/></svg>
+            </button>
+          </div>
+
+          <div class="tpb-progress-wrap">
+            <div class="tpb-progress-track">
+              <div class="tpb-progress-fill" id="tpb-progress-fill" style="width: 0%;"></div>
+            </div>
+            <span class="tpb-progress-text" id="tpb-progress-text">0%</span>
+          </div>
+
+          <div class="tpb-speed-menu" id="tpb-speed-menu">
+            <button class="tpb-speed-chip" data-speed="0.5">0.5×</button>
+            <button class="tpb-speed-chip" data-speed="0.75">0.75×</button>
+            <button class="tpb-speed-chip active" data-speed="1">1×</button>
+            <button class="tpb-speed-chip" data-speed="1.5">1.5×</button>
+            <button class="tpb-speed-chip" data-speed="2">2×</button>
+            <button class="tpb-speed-chip" data-speed="3">3×</button>
+            <button class="tpb-speed-chip" data-speed="4">4×</button>
+          </div>
+        </div>
+
         <!-- Bottom Battle Graffiti Ribbon ("A SMALL ARTIST IN A BIG WORLD") -->
         <div class="bottom-battle-ribbon" aria-hidden="true">
           <!-- Left graffiti block -->
@@ -624,6 +659,22 @@
     <div id="toast" class="toast hidden">
       <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
       <span id="toast-msg">Saved PNG</span>
+    </div>
+
+    <!-- Trick Overwrite Confirmation Modal -->
+    <div class="trick-confirm-backdrop hidden" id="trick-confirm-backdrop" role="dialog" aria-modal="true" aria-labelledby="tcm-title">
+      <div class="trick-confirm-modal">
+        <div class="tcm-header">
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="var(--accent-cyan)" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          <h3 id="tcm-title">Start New Trick?</h3>
+        </div>
+        <p class="tcm-body">You have drawing artwork on the canvas. Choose how you would like to proceed:</p>
+        <div class="tcm-actions">
+          <button class="tcm-btn tcm-cancel-btn" id="tcm-cancel-btn">Cancel</button>
+          <button class="tcm-btn tcm-keep-btn" id="tcm-keep-btn">Keep &amp; Draw On Top</button>
+          <button class="tcm-btn tcm-clear-btn" id="tcm-clear-btn">Clear &amp; Start Fresh</button>
+        </div>
+      </div>
     </div>
   </div>
 
