@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Stickman Paint</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body class="theme-dark">
+  <div id="app" class="paint-app">
+    <!-- Top Bar: Minimal, Compact (~48px) -->
+    <header class="top-bar">
+      <!-- Left: Subtle Brand Mark -->
+      <div class="top-left">
+        <div class="brand">
+          <div class="brand-avatar">
+            <!-- Stylized Stickman Figure SVG -->
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="5" r="3"/>
+              <path d="M12 8v8M8 12l4-2 4 2M9 21l3-5 3 5"/>
+            </svg>
+          </div>
+          <span class="brand-name">Stickman Paint</span>
+        </div>
+      </div>
+
+      <!-- Center: Primary Drawing Tools -->
+      <nav class="tool-dock">
+        <!-- 1. Pencil (Default) -->
+        <button class="tool-btn active has-tooltip" id="tool-pencil" data-tool="pencil" aria-label="Pencil (P)" data-tooltip="Pencil · P">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/>
+          </svg>
+        </button>
+
+        <!-- 2. Brushes (Popover) -->
+        <div class="popover-wrapper" id="brush-popover-wrapper">
+          <button class="tool-btn has-tooltip" id="tool-brush" data-tool="brush" aria-label="Brushes (B)" data-tooltip="Brushes · B">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <path d="m9.06 11.9 8.07-8.06a2.85 2.85 0 1 1 4.03 4.03l-8.06 8.08"/>
+              <path d="M7.07 14.94c-1.66 0-3 1.35-3 3.02 0 1.33-2.5 1.52-2 2.5.42.85 1.7 1.54 3.07 1.54 2.57 0 4.86-1.93 4.86-4.5 0-1.42-1.07-2.56-2.93-2.56z"/>
+            </svg>
+          </button>
+          <div class="popover-menu brush-menu" id="brush-menu">
+            <div class="popover-header">Brush Style</div>
+            <div class="brush-grid">
+              <button class="brush-opt active" data-brush="pencil">
+                <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M17 3a2.8 2.8 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg>
+                <span>Pencil</span>
+              </button>
+              <button class="brush-opt" data-brush="ink">
+                <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8"><path d="m12 19 7-7 3 3-7 7-3-3z"/><path d="m18 13-1.5-7.5L2 2l3.5 14.5L13 18"/><path d="m2 2 7.586 7.586"/><circle cx="11" cy="11" r="2"/></svg>
+                <span>Ink Pen</span>
+              </button>
+              <button class="brush-opt" data-brush="marker">
+                <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8"><path d="m14 2 8 8L10 22H2v-8L14 2z"/><path d="m9 7 8 8"/></svg>
+                <span>Marker</span>
+              </button>
+              <button class="brush-opt" data-brush="crayon">
+                <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8"><path d="m18 2 4 4-13 13-5 1 1-5 13-13z"/><path d="m15 5 4 4"/></svg>
+                <span>Crayon</span>
+              </button>
+              <button class="brush-opt" data-brush="watercolor">
+                <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/></svg>
+                <span>Watercolor</span>
+              </button>
+              <button class="brush-opt" data-brush="airbrush">
+                <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="1"/><circle cx="8" cy="10" r="1"/><circle cx="16" cy="10" r="1"/><circle cx="10" cy="15" r="1"/><circle cx="14" cy="15" r="1"/><circle cx="12" cy="6" r="1"/><circle cx="6" cy="14" r="1"/><circle cx="18" cy="14" r="1"/></svg>
+                <span>Airbrush</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 3. Eraser -->
+        <button class="tool-btn has-tooltip" id="tool-eraser" data-tool="eraser" aria-label="Eraser (E)" data-tooltip="Eraser · E">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="m7 21 13-13-6-6L1 15l6 6z"/><path d="m22 21h-8"/>
+          </svg>
+        </button>
+
+        <!-- 4. Fill Bucket -->
+        <button class="tool-btn has-tooltip" id="tool-bucket" data-tool="bucket" aria-label="Fill (G)" data-tooltip="Fill · G">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="m19 11-8-8-8.5 8.5a2.12 2.12 0 0 0 0 3l5 5a2.12 2.12 0 0 0 3 0L19 11z"/><path d="m5 2 5 5"/><path d="M2 13h15"/><path d="M22 20a2 2 0 1 1-4 0c0-1.6 2-3 2-3s2 1.4 2 3z"/>
+          </svg>
+        </button>
+
+        <!-- 5. Eyedropper -->
+        <button class="tool-btn has-tooltip" id="tool-eyedropper" data-tool="eyedropper" aria-label="Color Picker (I)" data-tooltip="Color Picker · I">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="m14.5 2 7.5 7.5-3 3-7.5-7.5 3-3z"/><path d="m11.5 5-9.5 9.5V22h7.5l9.5-9.5"/>
+          </svg>
+        </button>
+
+        <!-- 6. Shapes (Popover) -->
+        <div class="popover-wrapper" id="shape-popover-wrapper">
+          <button class="tool-btn has-tooltip" id="tool-shapes-btn" aria-label="Shapes" data-tooltip="Shapes">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="3" width="18" height="18" rx="4"/>
+            </svg>
+          </button>
+          <div class="popover-menu shapes-menu" id="shapes-menu">
+            <div class="popover-header">Shapes</div>
+            <div class="shapes-grid">
+              <button class="shape-opt active" data-shape="line" title="Line">
+                <svg viewBox="0 0 20 20" width="14" height="14"><line x1="2" y1="18" x2="18" y2="2" stroke="currentColor" stroke-width="2"/></svg>
+              </button>
+              <button class="shape-opt" data-shape="rect" title="Rectangle">
+                <svg viewBox="0 0 20 20" width="14" height="14"><rect x="3" y="3" width="14" height="14" stroke="currentColor" stroke-width="1.8" fill="none"/></svg>
+              </button>
+              <button class="shape-opt" data-shape="circle" title="Circle">
+                <svg viewBox="0 0 20 20" width="14" height="14"><circle cx="10" cy="10" r="7" stroke="currentColor" stroke-width="1.8" fill="none"/></svg>
+              </button>
+              <button class="shape-opt" data-shape="triangle" title="Triangle">
+                <svg viewBox="0 0 20 20" width="14" height="14"><polygon points="10,3 17,17 3,17" stroke="currentColor" stroke-width="1.8" fill="none"/></svg>
+              </button>
+              <button class="shape-opt" data-shape="arrow" title="Arrow">
+                <svg viewBox="0 0 20 20" width="14" height="14"><line x1="3" y1="10" x2="17" y2="10" stroke="currentColor" stroke-width="2"/><polyline points="11,4 17,10 11,16" stroke="currentColor" stroke-width="2" fill="none"/></svg>
+              </button>
+              <button class="shape-opt" data-shape="star" title="Star">
+                <svg viewBox="0 0 20 20" width="14" height="14"><polygon points="10,1 12.5,7 19,7 14,11 16,18 10,14 4,18 6,11 1,7 7.5,7" stroke="currentColor" stroke-width="1.5" fill="none"/></svg>
+              </button>
+            </div>
+            <div class="shape-fill-row">
+              <label><input type="checkbox" id="chk-shape-fill"> Fill Shape</label>
+            </div>
+          </div>
+        </div>
+
+        <div class="tool-divider"></div>
+
+        <!-- 7. Stickman Tricks Popover (Playful & Elegant) -->
+        <div class="popover-wrapper" id="tricks-popover-wrapper">
+          <button class="tool-btn tricks-btn has-tooltip" id="btn-stickman-tricks" aria-label="Stickman Tricks" data-tooltip="Stickman Tricks">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <path d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3L12 3z"/>
+            </svg>
+            <span class="tricks-label">Tricks</span>
+          </button>
+          <div class="popover-menu tricks-menu" id="tricks-menu">
+            <div class="popover-header">Stickman Tricks</div>
+            <button class="trick-opt" id="trick-mountain">
+              <div class="trick-icon-wrap">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8"><path d="m8 3 4 8 5-5 5 15H2L8 3z"/></svg>
+              </div>
+              <div class="trick-info">
+                <strong>Draw Mountain</strong>
+                <small>Contour ridges & footholds</small>
+              </div>
+            </button>
+            <button class="trick-opt" id="trick-sun">
+              <div class="trick-icon-wrap">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
+              </div>
+              <div class="trick-info">
+                <strong>Golden Sunrise</strong>
+                <small>Warm radiant sunburst</small>
+              </div>
+            </button>
+            <button class="trick-opt" id="trick-stairs">
+              <div class="trick-icon-wrap">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 19h4v-4h4v-4h4V7h4"/></svg>
+              </div>
+              <div class="trick-info">
+                <strong>Ascent Ledges</strong>
+                <small>Stepping platforms</small>
+              </div>
+            </button>
+            <button class="trick-opt" id="trick-flag">
+              <div class="trick-icon-wrap">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>
+              </div>
+              <div class="trick-info">
+                <strong>Summit Flag</strong>
+                <small>Victory milestone marker</small>
+              </div>
+            </button>
+          </div>
+        </div>
+      </nav>
+
+      <!-- Right: Functional Controls -->
+      <div class="top-right">
+        <!-- Undo / Redo -->
+        <div class="action-group">
+          <button class="action-btn has-tooltip" id="btn-undo" title="Undo" data-tooltip="Undo · Ctrl + Z" disabled>
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M3 7v6h6"/><path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"/>
+            </svg>
+          </button>
+          <button class="action-btn has-tooltip" id="btn-redo" title="Redo" data-tooltip="Redo · Ctrl + Y" disabled>
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 7v6h-6"/><path d="M3 17a9 9 0 0 1 9-9 9 9 0 0 1 6 2.3l3 2.7"/>
+            </svg>
+          </button>
+        </div>
+
+        <!-- Zoom Control -->
+        <div class="zoom-pill">
+          <button class="zoom-btn" id="btn-zoom-out" title="Zoom Out">−</button>
+          <span class="zoom-text" id="zoom-value">100%</span>
+          <button class="zoom-btn" id="btn-zoom-in" title="Zoom In">+</button>
+        </div>
+
+        <!-- Layers Toggle -->
+        <button class="action-btn has-tooltip" id="btn-layers-toggle" aria-label="Layers" data-tooltip="Layers">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="12 2 2 7 12 12 22 7 12 2"/>
+            <polyline points="2 17 12 22 22 17"/>
+            <polyline points="2 12 12 17 22 12"/>
+          </svg>
+        </button>
+
+        <!-- Clear Canvas -->
+        <button class="action-btn has-tooltip" id="btn-clear-canvas" aria-label="Clear Canvas" data-tooltip="Clear Canvas">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="3 6 5 6 21 6"/>
+            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+          </svg>
+        </button>
+
+        <!-- Save Button -->
+        <button class="primary-save-btn has-tooltip" id="btn-save-png" aria-label="Save PNG" data-tooltip="Save PNG · Ctrl + S">
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+            <polyline points="7 10 12 15 17 10"/>
+            <line x1="12" y1="15" x2="12" y2="3"/>
+          </svg>
+          <span>Save</span>
+        </button>
+
+        <!-- Settings Popover -->
+        <div class="popover-wrapper" id="settings-popover-wrapper">
+          <button class="action-btn has-tooltip" id="btn-settings" aria-label="Settings" data-tooltip="Settings">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8">
+              <circle cx="12" cy="12" r="3"/>
+              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+            </svg>
+          </button>
+          <div class="popover-menu settings-menu" id="settings-menu">
+            <div class="popover-header">Settings</div>
+            <label class="setting-item">
+              <span>Dark Workspace</span>
+              <input type="checkbox" id="chk-dark-mode" checked>
+            </label>
+            <label class="setting-item">
+              <span>Drawing Sound</span>
+              <input type="checkbox" id="chk-sound-effects">
+            </label>
+            <label class="setting-item">
+              <span>Line Stabilizer</span>
+              <input type="checkbox" id="chk-stabilizer" checked>
+            </label>
+            <label class="setting-item has-tooltip" data-tooltip="When enabled, the eraser removes artwork from every visible drawing layer.">
+              <span>Erase Across Layers</span>
+              <input type="checkbox" id="chk-erase-all-layers">
+            </label>
+            <div class="setting-divider"></div>
+            <div class="setting-slider-row">
+              <label>Stickman Size</label>
+              <input type="range" id="slider-stickman-scale" min="0.4" max="1.1" step="0.05" value="0.65">
+            </div>
+            <div class="setting-divider"></div>
+            <div class="setting-hint">
+              <span>P Pencil • B Brush • E Eraser • G Fill</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- Main Drawing Workspace: The Canvas Dominates -->
+    <main class="drawing-workspace" id="drawing-workspace">
+      <!-- Centered Canvas Paper -->
+      <div class="paper-container" id="paper-container">
+        <div class="paper-sheet" id="paper-sheet">
+          <!-- Canvas Layer Stack -->
+          <div class="layers-container" id="layers-container"></div>
+          <!-- Transient Drawing Preview Canvas -->
+          <canvas id="preview-canvas" class="canvas-layer preview-layer"></canvas>
+        </div>
+      </div>
+
+      <!-- Animated Stickman Living Actor -->
+      <div id="stickman-actor" class="stickman-actor">
+        <div class="stickman-body" id="stickman-body">
+          <img id="stickman-sprite" src="assets/stickman_hover.png" alt="Stickman Cursor">
+        </div>
+        <!-- Subtle 3px crosshair precision dot -->
+        <div class="cursor-crosshair" id="cursor-crosshair"></div>
+      </div>
+    </main>
+
+    <!-- Bottom Floating Dock: Clean Colors & Brush Size -->
+    <footer class="bottom-dock">
+      <!-- 1. Brush Size Selector (Distinct Optical Dots) -->
+      <div class="size-dock">
+        <span class="dock-label">Size</span>
+        <div class="size-pills">
+          <button class="size-pill has-tooltip" data-size="2" data-tooltip="Fine · 2px"><span class="dot size-dot-1"></span></button>
+          <button class="size-pill active has-tooltip" data-size="4" data-tooltip="Standard · 4px"><span class="dot size-dot-2"></span></button>
+          <button class="size-pill has-tooltip" data-size="8" data-tooltip="Medium · 8px"><span class="dot size-dot-3"></span></button>
+          <button class="size-pill has-tooltip" data-size="16" data-tooltip="Bold · 16px"><span class="dot size-dot-4"></span></button>
+          <button class="size-pill has-tooltip" data-size="28" data-tooltip="Heavy · 28px"><span class="dot size-dot-5"></span></button>
+        </div>
+      </div>
+
+      <div class="dock-divider"></div>
+
+      <!-- 2. Clean 10-Color Palette Swatches -->
+      <div class="color-dock">
+        <div class="current-color-preview" id="current-color-preview" title="Current Color" style="background-color: #000000;"></div>
+        <div class="color-swatches" id="color-swatches">
+          <button class="swatch-btn active has-tooltip" data-color="#000000" style="background:#000000;" data-tooltip="Black"></button>
+          <button class="swatch-btn has-tooltip" data-color="#ffffff" style="background:#ffffff; border:1px solid #cbd5e1;" data-tooltip="White"></button>
+          <button class="swatch-btn has-tooltip" data-color="#64748b" style="background:#64748b;" data-tooltip="Slate"></button>
+          <button class="swatch-btn has-tooltip" data-color="#ef4444" style="background:#ef4444;" data-tooltip="Red"></button>
+          <button class="swatch-btn has-tooltip" data-color="#f97316" style="background:#f97316;" data-tooltip="Orange"></button>
+          <button class="swatch-btn has-tooltip" data-color="#f59e0b" style="background:#f59e0b;" data-tooltip="Gold"></button>
+          <button class="swatch-btn has-tooltip" data-color="#10b981" style="background:#10b981;" data-tooltip="Green"></button>
+          <button class="swatch-btn has-tooltip" data-color="#06b6d4" style="background:#06b6d4;" data-tooltip="Cyan"></button>
+          <button class="swatch-btn has-tooltip" data-color="#2563eb" style="background:#2563eb;" data-tooltip="Electric Blue"></button>
+          <button class="swatch-btn has-tooltip" data-color="#8b5cf6" style="background:#8b5cf6;" data-tooltip="Purple"></button>
+          <button class="swatch-btn has-tooltip" data-color="#ec4899" style="background:#ec4899;" data-tooltip="Pink"></button>
+          
+          <input type="color" id="native-color-picker" value="#2563eb" style="display:none">
+          <button class="swatch-add-btn has-tooltip" id="btn-custom-color" data-tooltip="Custom Color">+</button>
+        </div>
+      </div>
+    </footer>
+
+    <!-- Collapsible Right Layers Drawer (Narrow & Closed by Default) -->
+    <aside class="layers-drawer" id="layers-drawer">
+      <div class="drawer-header">
+        <span class="drawer-title">Layers</span>
+        <div class="drawer-actions">
+          <button class="drawer-icon-btn has-tooltip" id="btn-add-layer" data-tooltip="Add Layer" aria-label="Add Layer">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          </button>
+          <button class="drawer-icon-btn has-tooltip" id="btn-delete-layer" data-tooltip="Delete Layer" aria-label="Delete Layer">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+          </button>
+          <button class="drawer-icon-btn" id="btn-close-drawer" aria-label="Close Drawer">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </button>
+        </div>
+      </div>
+      <div class="drawer-body">
+        <div class="layer-opacity-control">
+          <label>Opacity</label>
+          <input type="range" id="layer-opacity-slider" min="0" max="100" value="100">
+          <span id="layer-opacity-val">100%</span>
+        </div>
+        <div class="layers-list" id="layers-list"></div>
+      </div>
+    </aside>
+
+    <!-- Subtle Toast Notification (e.g. "Saved PNG") -->
+    <div id="toast" class="toast hidden">
+      <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+      <span id="toast-msg">Saved PNG</span>
+    </div>
+  </div>
+
+  <script src="sprites.js"></script>
+  <script src="paint.js"></script>
+</body>
+</html>

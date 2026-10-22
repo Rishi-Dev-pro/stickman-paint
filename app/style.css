@@ -1,0 +1,981 @@
+/* ==========================================================================
+   Stickman Paint — Production Modern Design System (Refined & Polished)
+   ========================================================================== */
+
+:root {
+  /* Dark Studio Workspace (Default) */
+  --bg-app: #101218;
+  --bg-workspace: #171a22;
+  --bg-surface: #1e222c;
+  --bg-surface-hover: #282d3b;
+  --bg-elevated: #242935;
+  --border-subtle: rgba(255, 255, 255, 0.07);
+  --border-strong: rgba(255, 255, 255, 0.14);
+  
+  --text-main: #f8fafc;
+  --text-muted: #94a3b8;
+  --text-dim: #64748b;
+
+  --accent: #2563eb;
+  --accent-hover: #3b82f6;
+  --accent-subtle: rgba(37, 99, 235, 0.14);
+
+  --paper-bg: #ffffff;
+  --paper-border: rgba(0, 0, 0, 0.08);
+  --paper-shadow: 0 12px 36px rgba(0, 0, 0, 0.4), 0 2px 8px rgba(0, 0, 0, 0.2);
+
+  --font-sans: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+
+  --topbar-height: 48px;
+  --dock-height: 44px;
+}
+
+body.theme-light {
+  --bg-app: #f1f5f9;
+  --bg-workspace: #e2e8f0;
+  --bg-surface: #ffffff;
+  --bg-surface-hover: #f8fafc;
+  --bg-elevated: #f1f5f9;
+  --border-subtle: rgba(0, 0, 0, 0.07);
+  --border-strong: rgba(0, 0, 0, 0.14);
+
+  --text-main: #0f172a;
+  --text-muted: #475569;
+  --text-dim: #94a3b8;
+
+  --accent: #2563eb;
+  --accent-hover: #1d4ed8;
+  --accent-subtle: rgba(37, 99, 235, 0.08);
+
+  --paper-bg: #ffffff;
+  --paper-border: rgba(0, 0, 0, 0.06);
+  --paper-shadow: 0 10px 30px rgba(15, 23, 42, 0.08), 0 1px 4px rgba(15, 23, 42, 0.04);
+}
+
+/* Base Reset */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+body, html {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  font-family: var(--font-sans);
+  background-color: var(--bg-app);
+  color: var(--text-main);
+  font-size: 13px;
+  -webkit-font-smoothing: antialiased;
+}
+
+button {
+  font-family: inherit;
+  font-size: inherit;
+  color: inherit;
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+
+/* App Shell */
+.paint-app {
+  display: flex;
+  flex-direction: column;
+  width: 100vw;
+  height: 100vh;
+  position: relative;
+  overflow: hidden;
+}
+
+/* ==========================================================================
+   1. TOP BAR: Compact, Minimalist (48px)
+   ========================================================================== */
+.top-bar {
+  height: var(--topbar-height);
+  background: var(--bg-surface);
+  border-bottom: 1px solid var(--border-subtle);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 16px;
+  z-index: 100;
+  flex-shrink: 0;
+}
+
+/* Left Brand */
+.top-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.brand-avatar {
+  width: 26px;
+  height: 26px;
+  background: var(--bg-workspace);
+  border-radius: 6px;
+  border: 1px solid var(--border-subtle);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--accent);
+}
+
+.brand-name {
+  font-weight: 700;
+  font-size: 13px;
+  letter-spacing: -0.2px;
+  color: var(--text-main);
+}
+
+/* Center Tool Dock */
+.tool-dock {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  background: var(--bg-workspace);
+  padding: 3px;
+  border-radius: 8px;
+  border: 1px solid var(--border-subtle);
+}
+
+.tool-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+  transition: all 0.12s ease;
+  position: relative;
+}
+
+.tool-btn:hover {
+  background: var(--bg-surface-hover);
+  color: var(--text-main);
+}
+
+.tool-btn.active {
+  background: var(--accent-subtle);
+  color: var(--accent);
+  box-shadow: inset 0 0 0 1px var(--accent);
+  font-weight: 600;
+}
+
+.tool-divider {
+  width: 1px;
+  height: 18px;
+  background: var(--border-subtle);
+  margin: 0 4px;
+}
+
+.tricks-btn {
+  width: auto;
+  padding: 0 10px;
+  gap: 5px;
+  background: rgba(245, 158, 11, 0.1);
+  color: #f59e0b;
+  border: 1px solid rgba(245, 158, 11, 0.2);
+  font-weight: 600;
+  font-size: 12px;
+}
+
+.tricks-btn:hover {
+  background: rgba(245, 158, 11, 0.18);
+  color: #fbbf24;
+}
+
+/* Right Functional Actions */
+.top-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.action-group {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.action-btn {
+  width: 30px;
+  height: 30px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+  transition: all 0.12s;
+  position: relative;
+}
+
+.action-btn:hover:not(:disabled) {
+  background: var(--bg-surface-hover);
+  color: var(--text-main);
+}
+
+.action-btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.zoom-pill {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  background: var(--bg-workspace);
+  border: 1px solid var(--border-subtle);
+  border-radius: 6px;
+  padding: 2px 4px;
+}
+
+.zoom-btn {
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  color: var(--text-muted);
+  border-radius: 4px;
+}
+
+.zoom-btn:hover {
+  background: var(--bg-surface-hover);
+  color: var(--text-main);
+}
+
+.zoom-text {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  width: 38px;
+  text-align: center;
+  color: var(--text-main);
+}
+
+.primary-save-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--accent);
+  color: #ffffff;
+  padding: 5px 12px;
+  border-radius: 6px;
+  font-weight: 600;
+  font-size: 12px;
+  transition: all 0.15s;
+  position: relative;
+}
+
+.primary-save-btn:hover {
+  background: var(--accent-hover);
+  transform: translateY(-1px);
+}
+
+/* ==========================================================================
+   2. ELEGANT TOOLTIP SYSTEM
+   ========================================================================== */
+.has-tooltip {
+  position: relative;
+}
+
+.has-tooltip::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%) translateY(4px);
+  background: rgba(15, 18, 26, 0.94);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #f1f5f9;
+  font-size: 11px;
+  font-weight: 500;
+  white-space: nowrap;
+  padding: 4px 8px;
+  border-radius: 5px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.15s ease 0.35s, transform 0.15s ease 0.35s;
+  z-index: 10000;
+}
+
+.has-tooltip:hover::after {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+/* Bottom dock tooltips float above instead of below */
+.bottom-dock .has-tooltip::after {
+  top: auto;
+  bottom: calc(100% + 8px);
+  transform: translateX(-50%) translateY(-4px);
+}
+
+.bottom-dock .has-tooltip:hover::after {
+  transform: translateX(-50%) translateY(0);
+}
+
+/* Settings menu tooltips float above with clean multiline wrap */
+.settings-menu .has-tooltip::after {
+  top: auto;
+  bottom: calc(100% + 6px);
+  left: 50%;
+  transform: translateX(-50%) translateY(-4px);
+  white-space: normal;
+  width: 170px;
+  text-align: center;
+  line-height: 1.35;
+}
+
+.settings-menu .has-tooltip:hover::after {
+  transform: translateX(-50%) translateY(0);
+}
+
+/* ==========================================================================
+   3. CLEAN POPOVER MENUS (Brushes, Shapes, Tricks, Settings)
+   ========================================================================== */
+.popover-wrapper {
+  position: relative;
+}
+
+.popover-menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--bg-surface);
+  border: 1px solid var(--border-strong);
+  border-radius: 10px;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.4);
+  padding: 8px;
+  display: none;
+  flex-direction: column;
+  gap: 4px;
+  z-index: 1000;
+  min-width: 160px;
+}
+
+.popover-wrapper.open .popover-menu {
+  display: flex;
+}
+
+.popover-header {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  padding: 2px 4px 4px 4px;
+}
+
+/* Brush Grid */
+.brush-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 3px;
+}
+
+.brush-opt {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 8px;
+  border-radius: 5px;
+  font-size: 11px;
+  color: var(--text-muted);
+  background: var(--bg-workspace);
+  border: 1px solid transparent;
+  text-align: left;
+  transition: all 0.1s;
+}
+
+.brush-opt:hover {
+  background: var(--bg-surface-hover);
+  color: var(--text-main);
+}
+
+.brush-opt.active {
+  background: var(--accent-subtle);
+  color: var(--accent);
+  border-color: var(--accent);
+  font-weight: 600;
+}
+
+/* Shapes Grid */
+.shapes-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 4px;
+}
+
+.shape-opt {
+  width: 36px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 5px;
+  background: var(--bg-workspace);
+  color: var(--text-muted);
+  transition: all 0.1s;
+}
+
+.shape-opt:hover {
+  background: var(--bg-surface-hover);
+  color: var(--text-main);
+}
+
+.shape-opt.active {
+  background: var(--accent-subtle);
+  color: var(--accent);
+  border: 1px solid var(--accent);
+}
+
+.shape-fill-row {
+  margin-top: 4px;
+  padding-top: 4px;
+  border-top: 1px solid var(--border-subtle);
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.shape-fill-row label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+}
+
+/* Stickman Tricks Menu */
+.tricks-menu {
+  min-width: 200px;
+}
+
+.trick-opt {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 8px;
+  border-radius: 6px;
+  background: var(--bg-workspace);
+  border: 1px solid transparent;
+  transition: all 0.12s;
+  text-align: left;
+}
+
+.trick-opt:hover {
+  background: rgba(245, 158, 11, 0.1);
+  border-color: rgba(245, 158, 11, 0.25);
+  transform: translateY(-1px);
+}
+
+.trick-icon-wrap {
+  width: 24px;
+  height: 24px;
+  border-radius: 4px;
+  background: var(--bg-surface);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #f59e0b;
+}
+
+.trick-info strong {
+  display: block;
+  font-size: 11px;
+  color: var(--text-main);
+}
+
+.trick-info small {
+  display: block;
+  font-size: 9px;
+  color: var(--text-muted);
+}
+
+/* Settings Menu */
+.settings-menu {
+  min-width: 200px;
+  left: auto;
+  right: 0;
+  transform: none;
+}
+
+.setting-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 4px 2px;
+  font-size: 11px;
+  color: var(--text-main);
+  cursor: pointer;
+}
+
+.setting-item input[type="checkbox"] {
+  accent-color: var(--accent);
+}
+
+.setting-divider {
+  height: 1px;
+  background: var(--border-subtle);
+  margin: 4px 0;
+}
+
+.setting-slider-row {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.setting-slider-row input[type="range"] {
+  accent-color: var(--accent);
+  height: 4px;
+}
+
+.setting-hint {
+  font-size: 9px;
+  color: var(--text-dim);
+  font-family: var(--font-mono);
+}
+
+/* ==========================================================================
+   4. MAIN CANVAS WORKSPACE (Paper Desk Aesthetic)
+   ========================================================================== */
+.drawing-workspace {
+  flex: 1;
+  background: var(--bg-workspace);
+  position: relative;
+  overflow: auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px 32px 84px 32px;
+  cursor: crosshair;
+}
+
+.drawing-workspace::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+.drawing-workspace::-webkit-scrollbar-thumb {
+  background: var(--border-strong);
+  border-radius: 3px;
+}
+
+/* The Paper Sheet */
+.paper-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.05s ease-out;
+  padding: 20px; /* Comfortable breathing room */
+}
+
+.paper-sheet {
+  position: relative;
+  background-color: var(--paper-bg);
+  box-shadow: var(--paper-shadow);
+  border: 1px solid var(--paper-border);
+  border-radius: 2px;
+  width: 1280px;
+  height: 720px;
+  transform-origin: center center;
+}
+
+.layers-container {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.canvas-layer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.preview-layer {
+  pointer-events: none;
+  z-index: 10;
+}
+
+/* ==========================================================================
+   5. STICKMAN LIVING ACTOR (Polished Physics & Pencil Anchor)
+   ========================================================================== */
+.stickman-actor {
+  position: fixed;
+  pointer-events: none;
+  z-index: 99999;
+  top: 0;
+  left: 0;
+  transform: translate3d(-9999px, -9999px, 0);
+  opacity: 0;
+  transition: opacity 0.15s ease-out;
+  will-change: transform;
+}
+
+.stickman-actor.visible {
+  opacity: 1;
+}
+
+.stickman-body {
+  position: relative;
+  width: 95px; /* Tuned comfortable size */
+  height: auto;
+  transform-origin: 77.64% 99.76%;
+  will-change: transform;
+}
+
+.stickman-actor img {
+  width: 100%;
+  height: auto;
+  display: block;
+  filter: drop-shadow(0 3px 8px rgba(0,0,0,0.25));
+}
+
+/* Precision 4px Crosshair Dot at Pencil Tip */
+.cursor-crosshair {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  border: 1.5px solid var(--accent);
+  background: #ffffff;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  box-shadow: 0 0 2px rgba(0,0,0,0.4);
+}
+
+.stickman-actor.tool-eraser .cursor-crosshair {
+  width: var(--eraser-indicator-size, 16px);
+  height: var(--eraser-indicator-size, 16px);
+  border-radius: 50%;
+  border: 1px solid rgba(15, 23, 42, 0.55);
+  background: rgba(255, 255, 255, 0.2);
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.8);
+  transition: width 0.08s, height 0.08s;
+}
+
+/* ==========================================================================
+   6. BOTTOM FLOATING DOCK (Clean, Compact, Elevated)
+   ========================================================================== */
+.bottom-dock {
+  position: absolute;
+  bottom: 18px;
+  left: 50%;
+  transform: translateX(-50%);
+  height: var(--dock-height);
+  background: var(--bg-surface);
+  border: 1px solid var(--border-strong);
+  border-radius: 22px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+  display: flex;
+  align-items: center;
+  padding: 0 12px;
+  gap: 10px;
+  z-index: 100;
+  backdrop-filter: blur(10px);
+}
+
+.dock-label {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* Size Pills with Visually Distinct Optical Dots */
+.size-dock {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.size-pills {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.size-pill {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+  background: var(--bg-workspace);
+  border: 1px solid transparent;
+  transition: all 0.1s;
+}
+
+.size-pill .dot {
+  background: currentColor;
+  border-radius: 50%;
+}
+
+.size-dot-1 { width: 3px; height: 3px; }
+.size-dot-2 { width: 5px; height: 5px; }
+.size-dot-3 { width: 8px; height: 8px; }
+.size-dot-4 { width: 12px; height: 12px; }
+.size-dot-5 { width: 16px; height: 16px; }
+
+.size-pill:hover {
+  background: var(--bg-surface-hover);
+  color: var(--text-main);
+}
+
+.size-pill.active {
+  background: var(--accent-subtle);
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+.dock-divider {
+  width: 1px;
+  height: 18px;
+  background: var(--border-subtle);
+}
+
+/* Color Swatches */
+.color-dock {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.current-color-preview {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 2px solid #ffffff;
+  box-shadow: 0 0 0 1px var(--border-strong);
+}
+
+.color-swatches {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.swatch-btn {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  cursor: pointer;
+  transition: transform 0.1s;
+}
+
+.swatch-btn:hover {
+  transform: scale(1.2);
+}
+
+.swatch-btn.active {
+  border-color: #ffffff;
+  box-shadow: 0 0 0 1.5px var(--accent);
+}
+
+.swatch-add-btn {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--bg-workspace);
+  border: 1px dashed var(--border-strong);
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.swatch-add-btn:hover {
+  color: var(--text-main);
+  border-color: var(--accent);
+}
+
+/* ==========================================================================
+   7. LAYERS DRAWER (Narrow, Compact Slide-in)
+   ========================================================================== */
+.layers-drawer {
+  position: absolute;
+  top: var(--topbar-height);
+  right: 0;
+  width: 220px;
+  height: calc(100% - var(--topbar-height));
+  background: var(--bg-surface);
+  border-left: 1px solid var(--border-subtle);
+  box-shadow: -8px 0 20px rgba(0, 0, 0, 0.25);
+  display: flex;
+  flex-direction: column;
+  z-index: 90;
+  transform: translateX(100%);
+  transition: transform 0.2s ease-in-out;
+}
+
+.layers-drawer.open {
+  transform: translateX(0);
+}
+
+.drawer-header {
+  height: 40px;
+  border-bottom: 1px solid var(--border-subtle);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 12px;
+}
+
+.drawer-title {
+  font-weight: 700;
+  font-size: 11px;
+  color: var(--text-main);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.drawer-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.drawer-icon-btn {
+  width: 24px;
+  height: 24px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+}
+
+.drawer-icon-btn:hover {
+  background: var(--bg-surface-hover);
+  color: var(--text-main);
+}
+
+.drawer-body {
+  flex: 1;
+  padding: 10px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.layer-opacity-control {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.layer-opacity-control input[type="range"] {
+  flex: 1;
+  height: 4px;
+  accent-color: var(--accent);
+}
+
+.layers-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.layer-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 8px;
+  background: var(--bg-workspace);
+  border: 1px solid var(--border-subtle);
+  border-radius: 5px;
+  font-size: 11px;
+  cursor: pointer;
+  transition: all 0.1s;
+}
+
+.layer-item:hover {
+  border-color: var(--border-strong);
+}
+
+.layer-item.active {
+  border-color: var(--accent);
+  background: var(--accent-subtle);
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.layer-vis-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 4px;
+  color: var(--text-muted);
+  transition: all 0.12s;
+}
+
+.layer-vis-btn:hover {
+  background: var(--bg-surface-hover);
+  color: var(--text-main);
+}
+
+.layer-vis-btn svg {
+  pointer-events: none;
+}
+
+/* ==========================================================================
+   8. SUBTLE TOAST NOTIFICATION
+   ========================================================================== */
+.toast {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  background: rgba(15, 23, 42, 0.94);
+  border: 1px solid var(--border-strong);
+  color: #ffffff;
+  padding: 8px 14px;
+  border-radius: 8px;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.4);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  font-weight: 500;
+  z-index: 100000;
+  transition: opacity 0.2s, transform 0.2s;
+  pointer-events: none;
+}
+
+.toast.hidden {
+  opacity: 0;
+  transform: translateY(8px);
+}
