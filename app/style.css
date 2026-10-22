@@ -1544,3 +1544,301 @@ button {
     display: none;
   }
 }
+
+/* ==========================================================================
+   10. ARTIST SPECIAL MOVES & TRICKS GALLERY MODAL
+   ========================================================================== */
+.trick-gallery-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.26s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.trick-gallery-modal.open {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.trick-gallery-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(3, 7, 18, 0.88);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+.trick-gallery-dialog {
+  position: relative;
+  z-index: 2;
+  width: min(1040px, 94vw);
+  max-height: min(88vh, 880px);
+  background: rgba(11, 15, 26, 0.98);
+  border: 1.5px solid var(--accent-cyan);
+  border-radius: 12px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.95), 0 0 35px rgba(56, 189, 248, 0.25);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  transform: scale(0.96) translateY(8px);
+  transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.trick-gallery-modal.open .trick-gallery-dialog {
+  transform: scale(1) translateY(0);
+}
+
+.trick-gallery-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 22px;
+  background: rgba(15, 23, 42, 0.9);
+  border-bottom: 1px solid rgba(56, 189, 248, 0.2);
+}
+
+.trick-header-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.trick-badge-icon {
+  font-size: 20px;
+  color: var(--accent-cyan);
+  filter: drop-shadow(0 0 8px rgba(56, 189, 248, 0.8));
+}
+
+.trick-gallery-title {
+  margin: 0;
+  font-family: var(--font-comic);
+  font-size: 17px;
+  letter-spacing: 0.8px;
+  color: #ffffff;
+  text-shadow: 0 0 12px rgba(56, 189, 248, 0.5);
+}
+
+.trick-gallery-subtitle {
+  margin: 2px 0 0;
+  font-size: 11.5px;
+  color: #94a3b8;
+  letter-spacing: 0.2px;
+}
+
+.trick-gallery-close-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.08);
+  color: #e2e8f0;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 800;
+  transition: all 0.2s ease;
+}
+
+.trick-gallery-close-btn:hover {
+  background: rgba(239, 68, 68, 0.25);
+  border-color: #ef4444;
+  color: #ef4444;
+  transform: rotate(90deg);
+}
+
+.trick-filter-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 22px;
+  background: rgba(10, 14, 23, 0.95);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.trick-filter-bar::-webkit-scrollbar {
+  display: none;
+}
+
+.trick-filter-chip {
+  padding: 6px 14px;
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #94a3b8;
+  font-family: var(--font-body);
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.18s ease;
+}
+
+.trick-filter-chip:hover {
+  background: rgba(56, 189, 248, 0.12);
+  border-color: var(--accent-cyan);
+  color: #ffffff;
+}
+
+.trick-filter-chip.active {
+  background: var(--accent-cyan);
+  border-color: var(--accent-cyan);
+  color: #020617;
+  font-weight: 900;
+  box-shadow: 0 0 12px rgba(56, 189, 248, 0.5);
+}
+
+.trick-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 16px;
+  padding: 18px 22px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(56, 189, 248, 0.4) transparent;
+}
+
+.trick-card {
+  background: rgba(15, 23, 42, 0.7);
+  border: 1px solid rgba(56, 189, 248, 0.18);
+  border-radius: 10px;
+  overflow: hidden;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
+}
+
+.trick-card:hover {
+  transform: translateY(-4px);
+  border-color: var(--accent-cyan);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.8), 0 0 16px rgba(56, 189, 248, 0.3);
+  background: rgba(15, 23, 42, 0.95);
+}
+
+.trick-card-preview-wrap {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  background: #ffffff;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.3);
+  overflow: hidden;
+}
+
+.trick-card-canvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.trick-diff-badge {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  padding: 2.5px 8px;
+  border-radius: 4px;
+  font-size: 9.5px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  backdrop-filter: blur(4px);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+}
+
+.diff-beginner {
+  background: rgba(34, 197, 94, 0.9);
+  color: #ffffff;
+}
+
+.diff-easy {
+  background: rgba(56, 189, 248, 0.9);
+  color: #020617;
+}
+
+.diff-medium {
+  background: rgba(168, 85, 247, 0.9);
+  color: #ffffff;
+}
+
+.diff-advanced {
+  background: rgba(239, 68, 68, 0.9);
+  color: #ffffff;
+}
+
+.trick-card-body {
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  gap: 8px;
+}
+
+.trick-card-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.trick-card-name {
+  font-family: var(--font-body);
+  font-size: 14px;
+  font-weight: 800;
+  color: #f8fafc;
+  letter-spacing: 0.2px;
+}
+
+.trick-category-tag {
+  font-size: 10px;
+  font-weight: 700;
+  color: #94a3b8;
+  background: rgba(255, 255, 255, 0.08);
+  padding: 2px 7px;
+  border-radius: 4px;
+}
+
+.trick-card-desc {
+  margin: 0;
+  font-size: 11.5px;
+  line-height: 1.4;
+  color: #94a3b8;
+  flex: 1;
+}
+
+.trick-execute-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 7px 12px;
+  border-radius: 6px;
+  background: rgba(56, 189, 248, 0.12);
+  border: 1px solid var(--accent-cyan);
+  color: var(--accent-cyan);
+  font-family: var(--font-body);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.4px;
+  cursor: pointer;
+  transition: all 0.16s ease;
+  margin-top: 4px;
+}
+
+.trick-execute-btn:hover {
+  background: var(--accent-cyan);
+  color: #020617;
+  box-shadow: 0 0 12px rgba(56, 189, 248, 0.6);
+}
+
+.trick-execute-btn:active {
+  transform: scale(0.97);
+}
+

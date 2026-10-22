@@ -82,6 +82,9 @@ class StickmanPaintApp {
     this.startStickmanLoop();
     this.saveHistory('Initial Canvas');
     this.fitCanvasToViewport();
+    if (typeof TrickGalleryManager !== 'undefined') {
+      this.trickGallery = new TrickGalleryManager(this);
+    }
   }
 
   /* ==========================================================================
@@ -889,12 +892,25 @@ class StickmanPaintApp {
       });
     }
 
-    // 6. Warrior Tricks Popover
+    // 6. Warrior Tricks Popover & Gallery Modal
     const tricksBtn = document.getElementById('btn-stickman-tricks');
     if (tricksBtn) {
       tricksBtn.addEventListener('click', (e) => {
         e.stopPropagation();
-        this.togglePopover(this.tricksPopover);
+        if (this.trickGallery) {
+          this.closePopovers();
+          this.trickGallery.open();
+        } else {
+          this.togglePopover(this.tricksPopover);
+        }
+      });
+    }
+
+    const openGalleryHeroBtn = document.getElementById('trick-open-gallery');
+    if (openGalleryHeroBtn) {
+      openGalleryHeroBtn.addEventListener('click', () => {
+        this.closePopovers();
+        if (this.trickGallery) this.trickGallery.open();
       });
     }
 
